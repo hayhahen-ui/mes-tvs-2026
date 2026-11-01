@@ -1,0 +1,24 @@
+{
+  "name": "mes-anti",
+  "version": "1.0.0",
+  "description": "LAF MES 5M Optimization System - TVS Rubber Boots Production Planning",
+  "main": "index.html",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve .",
+    "build": "echo 'Build successful for Vercel deployment'"
+  },
+  "keywords": [
+    "mes",
+    "manufacturing",
+    "5m",
+    "production-planning",
+    "kaizen",
+    "rubber-boots",
+    "tvs",
+    "poh",
+    "oee"
+  ],
+  "author": "Antigravity Team",
+  "license": "MIT"
+}
