@@ -27,20 +27,27 @@ window.MESCharts = {
   /**
    * 1. Combo Bar + Line: Capacity, Actual Output & POH/OEE Trends across 7 Segments
    */
-  renderCapacityChart(canvasId, segments) {
+  renderCapacityChart(canvasId, workstations) {
     this.destroy(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    const labels = segments.map(s => {
-      // Shorten label for clean display
-      return s.segment.replace(/^\d+\.\s*/, '').replace('Chuyền ', '').replace('Cán Luyện - ', '');
+    const list = workstations || [];
+    const labels = list.map(s => {
+      const name = s.shortName || s.name || s.segment || '';
+      return name.replace(/^\d+\.\s*/, '').replace('Chuyền ', '').replace('Cán Luyện - ', '').replace('Cán Luyện — ', '');
     });
 
-    const capacityData = segments.map(s => s.capacity);
-    const actualData = segments.map(s => s.actual);
-    const pohData = segments.map(s => Math.round((s.poh > 1 ? s.poh : s.poh * 100) * 10) / 10);
-    const oeeData = segments.map(s => Math.round((s.oee > 1 ? s.oee : s.oee * 100) * 10) / 10);
+    const capacityData = list.map(s => s.normCapacity || s.capacity || 0);
+    const actualData = list.map(s => s.actualToday || s.actual || 0);
+    const pohData = list.map(s => {
+      const p = s.pohPercent !== undefined ? s.pohPercent : s.poh;
+      return Math.round((p > 1 ? p : p * 100) * 10) / 10;
+    });
+    const oeeData = list.map(s => {
+      const o = s.oeePercent !== undefined ? s.oeePercent : s.oee;
+      return Math.round((o > 1 ? o : o * 100) * 10) / 10;
+    });
 
     this.instances[canvasId] = new Chart(ctx, {
       type: 'bar',
@@ -143,18 +150,17 @@ window.MESCharts = {
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    // Group by export_date_iso
     const milestoneMap = {};
-    orders.forEach(po => {
-      const d = po.export_date_iso || po.export_date;
+    (orders || []).forEach(po => {
+      const d = po.exportDateIso || po.export_date_iso || po.exportDate || po.export_date;
       if (!milestoneMap[d]) {
         milestoneMap[d] = {
-          dateStr: po.export_date,
+          dateStr: po.exportDate || po.export_date,
           iso: d,
           pairs: 0
         };
       }
-      milestoneMap[d].pairs += (po.total_pairs || po.pairs || 0);
+      milestoneMap[d].pairs += (po.totalPairs || po.total_pairs || po.pairs || 0);
     });
 
     const sortedDates = Object.keys(milestoneMap).sort();
@@ -167,11 +173,10 @@ window.MESCharts = {
     let sumExp = 0;
     sortedDates.forEach((d) => {
       const item = milestoneMap[d];
-      labels.push(item.dateStr.slice(0, 5)); // dd/mm
+      labels.push(item.dateStr.slice(0, 5));
       periodPairs.push(item.pairs);
       sumExp += item.pairs;
       cumExport.push(sumExp);
-      // LAF is pulled 19 days ahead, so LAF production is buffered in advance
       cumLaf.push(Math.min(64837, Math.round(sumExp * 1.08)));
       cumLvf.push(Math.min(64837, Math.round(sumExp * 1.02)));
     });
@@ -271,20 +276,19 @@ window.MESCharts = {
     if (!ctx) return;
 
     const counts = {};
-    orders.forEach(po => {
-      const p = po.total_pairs || po.pairs || 0;
+    (orders || []).forEach(po => {
+      const p = po.totalPairs || po.total_pairs || po.pairs || 0;
       let key = 'Khác';
       if (dimension === 'color') {
-        key = po.color || 'Không màu';
+        key = po.colorCode || po.color || 'Không màu';
       } else if (dimension === 'country') {
         key = po.country || 'Khác';
       } else if (dimension === 'batch') {
-        key = `Đợt ${po.batch || 1}`;
+        key = `Đợt ${po.batchNo || po.batch || 1}`;
       }
       counts[key] = (counts[key] || 0) + p;
     });
 
-    // Top entries
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const labels = [];
     const data = [];
@@ -304,7 +308,6 @@ window.MESCharts = {
       data.push(otherSum);
     }
 
-    // Color palettes
     const paletteMap = {
       'LC1783': '#334155', // Đen than
       'LC1786': '#4d7c0f', // Xanh olive
@@ -354,7 +357,7 @@ window.MESCharts = {
   },
 
   /**
-   * 4. Radar Chart: 5M Benchmark (Before Kaizen vs Plan 1 After 5M Optimization)
+   * 4. Radar Chart: 5M Benchmark
    */
   renderRadar5M(canvasId, before5M, after5M) {
     this.destroy(canvasId);
@@ -416,7 +419,7 @@ window.MESCharts = {
   },
 
   /**
-   * 5. Size Distribution (UK 3 - UK 9) & Mold Allocation (12 Molds)
+   * 5. Size Distribution & Mold Allocation
    */
   renderSizeDistChart(canvasId, ordersRaw, moldAlloc) {
     this.destroy(canvasId);
@@ -427,7 +430,7 @@ window.MESCharts = {
     const sizePairs = {};
     sizes.forEach(s => sizePairs[s] = 0);
 
-    ordersRaw.forEach(row => {
+    (ordersRaw || []).forEach(row => {
       const s = row.size ? row.size.trim() : '';
       if (sizePairs[s] !== undefined) {
         sizePairs[s] += (row.pairs || 0);
@@ -435,7 +438,7 @@ window.MESCharts = {
     });
 
     const pairsData = sizes.map(s => sizePairs[s]);
-    const moldsData = sizes.map(s => moldAlloc[s] || 1);
+    const moldsData = sizes.map(s => (moldAlloc && moldAlloc[s]) || 1);
 
     this.instances[canvasId] = new Chart(ctx, {
       type: 'bar',
@@ -474,7 +477,7 @@ window.MESCharts = {
                   return ` Số khuôn phân bổ: ${c.raw} bộ`;
                 }
                 const total = pairsData.reduce((a, b) => a + b, 0);
-                const pct = ((c.raw / total) * 100).toFixed(1);
+                const pct = total > 0 ? ((c.raw / total) * 100).toFixed(1) : 0;
                 return ` Sản lượng: ${c.raw.toLocaleString('vi-VN')} đôi (${pct}%)`;
               }
             }
@@ -505,20 +508,23 @@ window.MESCharts = {
   /**
    * 6. WIP Inventory Stacked Bar Chart across 7 Segments
    */
-  renderWipStackedChart(canvasId, subProcesses) {
+  renderWipStackedChart(canvasId, workstations) {
     this.destroy(canvasId);
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
-    // Group WIP by Segment
-    const segWip = {};
-    subProcesses.forEach(s => {
-      const seg = s.segment.replace(/^\d+\.\s*/, '');
-      segWip[seg] = (segWip[seg] || 0) + (s.wip_stock || 0);
-    });
+    const labels = [];
+    const data = [];
 
-    const labels = Object.keys(segWip);
-    const data = Object.values(segWip);
+    (workstations || []).forEach(w => {
+      const name = (w.shortName || w.name || '').replace(/^\d+\.\s*/, '').replace('Cán Luyện — ', '');
+      labels.push(name);
+      let totalWip = 0;
+      if (w.subProcesses) {
+        totalWip = w.subProcesses.reduce((s, p) => s + (p.wipStock || 0), 0);
+      }
+      data.push(totalWip);
+    });
 
     this.instances[canvasId] = new Chart(ctx, {
       type: 'bar',

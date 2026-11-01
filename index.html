@@ -1,105 +1,160 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" class="h-full">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MES-anti · Hệ Thống Quản Trị Sản Xuất LAF & Tối Ưu 5M (TVS Real Data)</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <!-- SheetJS for Full Excel (.xlsx) Import & Export -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <title>MES-anti • Hệ Thống Điều Độ & Quản Trị Sản Xuất 5M Phân Xưởng Bán Thành Phẩm LAF (TVS)</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fffbeb',
+              100: '#fef3c7',
+              500: '#f59e0b',
+              600: '#d97706',
+              700: '#b45309',
+              900: '#78350f',
+            },
+            laf: {
+              primary: '#0f172a',
+              accent: '#3b82f6',
+              success: '#10b981',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
   <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- SheetJS (xlsx.full.min.js) for Universal Excel Import/Export -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Custom Styles -->
   <link rel="stylesheet" href="css/style.css" />
 </head>
-<body class="min-h-screen flex flex-col bg-slate-100 text-slate-900 custom-scrollbar">
 
-  <!-- ==================== TOP HEADER BAR ==================== -->
-  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
-    <div class="max-w-[1680px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-200">
+
+  <!-- ==================== TOP NAVIGATION BAR ==================== -->
+  <header class="bg-slate-950 text-white sticky top-0 z-40 border-b border-slate-800 shadow-md">
+    <div class="max-w-[1720px] mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Factory Badge -->
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-sm">
-          <i data-lucide="factory" class="w-6 h-6"></i>
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center font-black text-slate-950 text-lg shadow-inner tracking-wider">
+          LAF
         </div>
         <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <h1 class="text-base sm:text-lg font-bold tracking-tight">MES-anti — PHÂN XƯỞNG LAF (DỮ LIỆU ĐƠN HÀNG THẬT TVS)</h1>
-            <span class="px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full">
-              Kế hoạch 1: Thuật toán Tối ưu 5M • OTD 100%
+          <div class="flex items-center gap-2">
+            <span class="font-extrabold text-sm sm:text-base tracking-wide text-white">MES-anti • TVS LAF System</span>
+            <span class="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-amber-400 text-slate-950 uppercase tracking-wider">
+              Thuật Toán 5M
+            </span>
+            <span class="hidden sm:inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500 text-white">
+              OTD 100%
             </span>
           </div>
-          <p class="text-xs text-slate-400">651 dòng Size • 113 PO Kinh Doanh (64.837 Đôi / 11.832 Thùng CLP) → Tối ưu 5M LAF (7 Phân đoạn / 32 BTP nhỏ) → Bàn giao LVF đúng Ngày xuất KD</p>
+          <p class="text-[11px] text-slate-400">
+            Phân xưởng Bán Thành Phẩm • 64.837 đôi (113 PO) • 11.832 Thùng CLP • 5 Màu • 71 NS
+          </p>
         </div>
       </div>
 
-      <div class="flex items-center gap-2 flex-wrap">
-        <div class="bg-slate-800/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5">
-          <span class="text-slate-400">Tổng Đơn KD:</span>
-          <span class="font-bold text-amber-400" id="headerTotalOrderPairs">64.837 đôi</span>
-        </div>
-        <div class="bg-slate-800/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5">
-          <span class="text-slate-400">Nhu cầu LVF:</span>
-          <span class="font-bold text-cyan-400" id="headerLvfTarget">650 đôi/ngày</span>
-        </div>
-        <div class="bg-slate-800/90 border border-slate-700 rounded-lg px-2.5 py-1.5 text-xs flex items-center gap-1.5">
-          <span class="text-slate-400 font-semibold" id="topbarClock"></span><span class="text-slate-600">|</span><span class="text-slate-400">POH / 5M:</span>
-          <span class="font-bold text-emerald-400" id="headerOverallPoh">95.2% (96.4đ)</span>
-        </div>
-
-        <!-- Global Action Buttons -->
-        <button id="btnOpenNewOrderModal" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm">
-          <i data-lucide="plus-circle" class="w-4 h-4"></i>
+      <!-- Quick Action Toolbar -->
+      <div class="flex items-center gap-2 flex-wrap text-xs">
+        <!-- New Manual Order Button -->
+        <button onclick="MESApp.openManualOrderModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+          <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
           <span>Thêm Đơn KD</span>
         </button>
-        <button id="btnOpenHandoverModal" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm">
-          <i data-lucide="truck" class="w-4 h-4"></i>
+
+        <!-- New Handover Button -->
+        <button onclick="MESApp.openManualHandoverModal()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 shadow-sm transition">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
           <span>Giao LVF</span>
         </button>
-        <button id="btnSimulateShift" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-sm" title="Mô phỏng hoàn thành thêm 1 ca sản xuất">
-          <i data-lucide="play" class="w-3.5 h-3.5"></i>
+
+        <!-- Simulate Shift Output -->
+        <button onclick="MESApp.simulateShift()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition" title="Ghi nhận +650 đôi cho toàn xưởng LAF">
+          <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i>
           <span>+1 Ca</span>
         </button>
-        <button id="btnResetDefaults" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 border border-slate-700 transition" title="Khôi phục toàn bộ dữ liệu gốc TVS">
+
+        <!-- Restore / Reset Data -->
+        <button onclick="MESStorage.resetToDefault()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition" title="Khôi phục 100% dữ liệu gốc đơn hàng TVS">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
           <span>Gốc</span>
         </button>
-        <button id="btnExportBackup" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium text-xs px-2.5 py-1.5 rounded-lg flex items-center gap-1 border border-slate-700 transition" title="Tải tệp sao lưu JSON">
-          <i data-lucide="save" class="w-3.5 h-3.5"></i>
+
+        <!-- Backup Data -->
+        <button onclick="MESStorage.downloadBackup()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition" title="Tải file JSON backup dự án">
+          <i data-lucide="database" class="w-3.5 h-3.5"></i>
           <span>Backup</span>
         </button>
+
+        <!-- Restore Backup File (hidden input) -->
+        <label class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-2.5 py-1.5 rounded-lg border border-slate-700 transition cursor-pointer flex items-center gap-1" title="Nạp lại file backup JSON">
+          <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i>
+          <span>Nạp</span>
+          <input type="file" id="fileRestoreBackup" accept=".json" class="hidden" onchange="MESStorage.restoreBackup(this)" />
+        </label>
+
+        <!-- System Clock -->
+        <div class="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 font-mono text-[11px]">
+          <i data-lucide="clock" class="w-3 h-3 text-amber-400"></i>
+          <span id="topbarClock">--:--:--</span>
+        </div>
       </div>
     </div>
 
-    <!-- Main Navigation Tabs -->
-    <div class="bg-slate-950 border-t border-slate-800">
-      <div class="max-w-[1680px] mx-auto px-4 flex items-center gap-1 overflow-x-auto custom-scrollbar py-1.5" id="mainNavTabs">
-        <button data-tab="dashboard" class="nav-tab-btn active-tab px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition bg-amber-500 text-slate-950">
+    <!-- ==================== MAIN 7 TABS BAR ==================== -->
+    <div class="bg-slate-900 border-t border-slate-800/80 px-4 overflow-x-auto custom-scrollbar">
+      <div class="max-w-[1720px] mx-auto flex items-center gap-1 py-1">
+        
+        <button data-tab="dashboard" class="tab-btn px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 whitespace-nowrap active-tab">
           <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
           <span>1. Dashboard Tổng Hợp & Chi Tiết</span>
         </button>
-        <button data-tab="orders_planning" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition text-slate-300 hover:bg-slate-800">
-          <i data-lucide="calendar-clock" class="w-4 h-4"></i>
+
+        <button data-tab="orders_planning" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="calendar-check" class="w-4 h-4"></i>
           <span>2. Đơn Hàng KD & Kế Hoạch 5M (113 PO)</span>
         </button>
-        <button data-tab="workstations" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition text-slate-300 hover:bg-slate-800">
+
+        <button data-tab="workstations" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="cpu" class="w-4 h-4"></i>
           <span>3. Phân Đoạn & 32 Công Đoạn Nhỏ</span>
         </button>
-        <button data-tab="btp_inventory" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition text-slate-300 hover:bg-slate-800">
+
+        <button data-tab="btp_inventory" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="boxes" class="w-4 h-4"></i>
           <span>4. Kho BTP Nhỏ WIP (32 Mã)</span>
         </button>
-        <button data-tab="lvf_handover" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition text-slate-300 hover:bg-slate-800">
-          <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+
+        <button data-tab="lvf_handover" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="truck" class="w-4 h-4"></i>
           <span>5. Bàn Giao BTP Sang LVF</span>
         </button>
-        <button data-tab="kaizen_center" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition text-slate-300 hover:bg-slate-800">
+
+        <button data-tab="kaizen_center" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="flame" class="w-4 h-4"></i>
           <span>6. Điểm Nghẽn & Kaizen LAF</span>
         </button>
-        <button data-tab="simulation_tab" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 whitespace-nowrap transition text-slate-300 hover:bg-slate-800">
+
+        <button data-tab="simulation_tab" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="sliders" class="w-4 h-4"></i>
           <span>7. Bộ Tham Số & Mô Phỏng 5M</span>
         </button>
@@ -107,27 +162,29 @@
     </div>
   </header>
 
-  <!-- ==================== MAIN WORKSPACE CONTAINER ==================== -->
-  <main class="flex-1 max-w-[1680px] w-full mx-auto px-4 py-5 space-y-6">
+  <!-- ==================== MAIN CONTENT CONTAINER ==================== -->
+  <main class="flex-1 max-w-[1720px] w-full mx-auto p-4 sm:p-6 space-y-6">
 
     <!-- ==================== TAB 1: DASHBOARD TỔNG HỢP & CHI TIẾT ==================== -->
     <section id="tab-dashboard" class="tab-panel space-y-6">
 
-      <!-- Action Bar: Manual Input, Import, Export -->
+      <!-- Action Toolbar (Manual Entry, Universal Import, Universal Export) -->
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-            <i data-lucide="bar-chart-big" class="w-4 h-4 text-amber-500"></i>
-            Trung Tâm Điều Hành Tổng Thể & Chi Tiết Phân Xưởng LAF (Tối Ưu 5M)
+            <i data-lucide="gauge" class="w-4 h-4 text-amber-500"></i>
+            Bảng Điều Khiển Tổng Hợp Sản Xuất & Điều Độ Phân Xưởng LAF
           </h2>
-          <p class="text-xs text-slate-500">Đánh giá toàn diện POH, OEE, tiến độ đáp ứng Ngày xuất KD (64.837 đôi / 113 PO) và hiệu quả từng công đoạn nhỏ</p>
+          <p class="text-xs text-slate-500">
+            Giám sát 64.837 đôi qua 7 phân đoạn, 32 công đoạn nhỏ, 4 chốt chặn kỹ thuật và tiến độ bàn giao sang gò ráp LVF
+          </p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <button onclick="MESApp.openManualSubstepModal()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
             <i data-lucide="edit-3" class="w-3.5 h-3.5 text-amber-400"></i>
             <span>Nhập tay Sản lượng Ca</span>
           </button>
-          <button onclick="MESApp.openUniversalImportModal('outputs')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+          <button onclick="MESApp.openUniversalImportModal('dashboard')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
             <i data-lucide="upload" class="w-3.5 h-3.5"></i>
             <span>Import Báo Cáo (.XLSX)</span>
           </button>
@@ -138,126 +195,133 @@
         </div>
       </div>
 
-      <!-- Value Stream Flow -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-          <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <i data-lucide="git-commit-horizontal" class="w-4 h-4 text-amber-500"></i>
-            Chuỗi Giá Trị Sản Xuất Giày Ủng (Đơn Hàng TVS → Kế Hoạch 5M LAF → BTP Nhỏ → Giao LVF)
-          </span>
-          <span class="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
-            Cam kết 100% đơn hàng kịp Ngày xuất Kinh doanh (25/07/2026 – 01/04/2027)
-          </span>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5 text-xs" id="valueStreamCards"></div>
-      </div>
+      <!-- Value Stream Pipeline 6 Cards -->
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3" id="valueStreamCards"></div>
 
-      <!-- KPI Summary Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="dashboardKpiGrid"></div>
+      <!-- 4 Top KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" id="dashboardKpiGrid"></div>
 
-      <!-- ROW 1 OF CHARTS: Combo Bar+Line & Multi-line Cumulative S-Curve -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <!-- Charts Grid 1: Combo Bar + Line & Leadtime S-Curve -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 class="text-sm font-bold text-slate-800">Biểu Đồ Cột & Đường Xu Hướng: Công Suất, Sản Lượng & POH/OEE 7 Phân Đoạn</h3>
-              <p class="text-xs text-slate-500">Cột: Định mức vs Thực tế (Đôi/ngày) • Đường Line: Xu hướng POH (%) & OEE (%)</p>
+              <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="bar-chart-2" class="w-4 h-4 text-amber-500"></i>
+                1. Tiến Độ Kế Hoạch & Thực Tế Theo Phân Đoạn (Combo Bar + Line)
+              </h3>
+              <p class="text-xs text-slate-500">So sánh tiến độ lũy kế vs Lệnh sản xuất chuẩn 64.837 đôi</p>
             </div>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-semibold">Bar + Line Trend</span>
           </div>
-          <div class="relative h-72 w-full">
+          <div class="h-[280px]">
             <canvas id="capacityChart"></canvas>
           </div>
         </div>
 
-        <div class="lg:col-span-6 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 class="text-sm font-bold text-slate-800">Đường Xu Hướng Lũy Kế: Kế Hoạch Xuất Hàng KD vs. Sản Xuất LAF & Giao LVF</h3>
-              <p class="text-xs text-slate-500">30 mốc Ngày xuất KD (25/07/2026 → 01/04/2027) tổng 64.837 đôi luôn có đường SX LAF đi trước</p>
+              <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-emerald-500"></i>
+                2. Lịch Trình Lùi 5M & Đường Cong Tích Lũy S-Curve (Line Trend Chart)
+              </h3>
+              <p class="text-xs text-slate-500">Nhịp độ điều độ lùi đảm bảo 100% đúng Ngày xuất KD</p>
             </div>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">S-Curve Lead-time</span>
           </div>
-          <div class="relative h-72 w-full">
+          <div class="h-[280px]">
             <canvas id="leadtimeChart"></canvas>
           </div>
         </div>
       </div>
 
-      <!-- ROW 2 OF CHARTS: Donut Chart, Radar 5M & Size Distribution / Molds -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        <!-- Donut Chart -->
-        <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <!-- Charts Grid 2: 3-Dimension Donut & Radar 5M -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3 flex-wrap gap-2">
             <div>
-              <h3 class="text-sm font-bold text-slate-800">Cơ Cấu 64.837 Đôi Đơn Hàng Thật</h3>
-              <p class="text-xs text-slate-500">Phân tích tỷ trọng Màu, Quốc gia & Đợt đặt hàng</p>
+              <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="pie-chart" class="w-4 h-4 text-indigo-500"></i>
+                3. Cơ Cấu Đơn Hàng 3 Chiều (Donut / Pie Chart)
+              </h3>
+              <p class="text-xs text-slate-500">Tỷ trọng phân bổ 64.837 đôi</p>
             </div>
-            <div class="flex items-center gap-1">
-              <button id="btnDonutColor" class="text-[11px] px-2 py-0.5 rounded font-semibold border">Màu</button>
-              <button id="btnDonutCountry" class="text-[11px] px-2 py-0.5 rounded font-semibold border">Nước</button>
-              <button id="btnDonutBatch" class="text-[11px] px-2 py-0.5 rounded font-semibold border">Đợt</button>
+            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-lg text-xs font-semibold">
+              <button id="btnDonutColor" class="px-2.5 py-1 rounded bg-white text-slate-900 shadow-sm transition">Màu</button>
+              <button id="btnDonutCountry" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 transition">Nước</button>
+              <button id="btnDonutBatch" class="px-2.5 py-1 rounded text-slate-600 hover:text-slate-900 transition">Đợt</button>
             </div>
           </div>
-          <div class="relative h-64 w-full">
+          <div class="h-[280px]">
             <canvas id="colorPieChart"></canvas>
           </div>
         </div>
 
-        <!-- Radar 5M Chart -->
-        <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 class="text-sm font-bold text-slate-800">Biểu Đồ Radar Quản Trị 5M Toàn Xưởng</h3>
-              <p class="text-xs text-slate-500">Đối sánh Trước tối ưu vs. Kế hoạch 1 (Tối ưu 5M)</p>
+              <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="target" class="w-4 h-4 text-rose-500"></i>
+                4. Radar Đánh Giá Năng Lực 5M Toàn Phân Xưởng LAF (Trước vs Sau Kaizen)
+              </h3>
+              <p class="text-xs text-slate-500">Man, Machine, Material, Method, Measurement (Thang 100 điểm)</p>
             </div>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">5M: 96.4đ</span>
           </div>
-          <div class="relative h-64 w-full">
+          <div class="h-[280px]">
             <canvas id="radar5mChart"></canvas>
           </div>
         </div>
+      </div>
 
-        <!-- Size & Molds Bar Chart -->
-        <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col">
-          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <!-- Charts Grid 3: Size & Mold Bar & WIP Stacked Bar -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
             <div>
-              <h3 class="text-sm font-bold text-slate-800">Cơ Cấu Cỡ Size & 12 Khuôn Ép Đế</h3>
-              <p class="text-xs text-slate-500">Phân bổ khuôn CCDC theo Size UK 3 – UK 9</p>
+              <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="layers" class="w-4 h-4 text-cyan-500"></i>
+                5. Cơ Cấu 7 Dải Size UK & Phân Bổ 12 Khuôn Ép Đế (Bar Chart)
+              </h3>
+              <p class="text-xs text-slate-500">UK 3–9 vs Số khuôn phân bổ theo tỷ lệ đặt hàng thực tế</p>
             </div>
-            <span class="text-[11px] px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-semibold">12 Khuôn</span>
           </div>
-          <div class="relative h-64 w-full">
+          <div class="h-[280px]">
             <canvas id="sizeDistChart"></canvas>
           </div>
         </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                <i data-lucide="boxes" class="w-4 h-4 text-purple-500"></i>
+                6. Phân Bổ Tồn Kho Bán Thành Phẩm WIP (Stacked Bar Chart)
+              </h3>
+              <p class="text-xs text-slate-500">Tồn kho nhỏ tại các trạm kiểm soát kỹ thuật và buffer chờ gò</p>
+            </div>
+          </div>
+          <div class="h-[280px]">
+            <canvas id="wipStackedChart"></canvas>
+          </div>
+        </div>
       </div>
 
-      <!-- ROW 3 OF CHARTS: WIP Stacked Bar & Bottleneck Overview -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+      <!-- Bảng Đánh Giá Hiệu Quả Chi Tiết & Toàn Xưởng LAF -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div>
-            <h3 class="text-sm font-bold text-slate-800">Phân Bổ Tồn Kho WIP 32 Mã BTP Nhỏ Theo 7 Phân Đoạn</h3>
-            <p class="text-xs text-slate-500">Kiểm soát buffer an toàn 2-3 ngày sản xuất gò, tránh gối đầu làm lão hóa cao su hoặc thiếu hụt đứt đoạn</p>
+            <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+              <i data-lucide="table" class="w-4 h-4 text-amber-500"></i>
+              Bảng Đánh Giá Hiệu Quả Chi Tiết Từng Công Đoạn & Toàn Bộ Phân Xưởng LAF
+            </h3>
+            <p class="text-xs text-slate-500">Đầy đủ số liệu định biên, công suất chuẩn, POH đạt được, tỷ lệ hoàn thành và cảnh báo điểm nghẽn</p>
           </div>
-          <span class="text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-lg">Tổng WIP: ~43.260 đôi</span>
+          <div class="flex items-center gap-2">
+            <button id="btnToggleTableMode" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold px-3 py-1.5 rounded-lg border border-slate-200 transition">
+              Chuyển sang xem Chi tiết 32 Công đoạn nhỏ
+            </button>
+          </div>
         </div>
-        <div class="relative h-44 w-full">
-          <canvas id="wipStackedChart"></canvas>
-        </div>
-      </div>
 
-      <!-- Workshop Efficiency Matrix Table (Toggleable between 7 Segments and 32 Sub-processes) -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-3">
-        <div class="flex items-center justify-between flex-wrap gap-2">
-          <div>
-            <h3 class="text-sm font-bold text-slate-900">Bảng Đánh Giá Hiệu Quả 7 Phân Đoạn & 32 Công Đoạn Nhỏ LAF</h3>
-            <p class="text-xs text-slate-500">Theo dõi định mức, thực tế, POH %, OEE %, QC %, tồn kho WIP và điểm nghẽn</p>
-          </div>
-          <button id="btnToggleTableMode" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3 py-1.5 rounded-lg border border-slate-300 transition">
-            Chuyển sang xem Chi tiết 32 Công đoạn nhỏ
-          </button>
-        </div>
         <div class="overflow-x-auto custom-scrollbar border border-slate-100 rounded-xl">
           <table class="w-full text-left border-collapse">
             <thead id="workshopTableHeader"></thead>
@@ -267,7 +331,7 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 2: ĐƠN HÀNG KD & KẾ HOẠCH 5M (113 PO) ==================== -->
+    <!-- ==================== TAB 2: ĐƠN HÀNG KD & KẾ HOẠCH 5M ==================== -->
     <section id="tab-orders_planning" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
@@ -298,36 +362,100 @@
         </div>
       </div>
 
-      <!-- Filters & View Switchers -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
-        <div class="flex items-center gap-2 flex-wrap flex-1">
-          <select id="filterOrderBatch" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium"></select>
-          <select id="filterOrderColor" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium"></select>
-          <select id="filterOrderCountry" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium"></select>
-          <div class="relative flex-1 min-w-[200px]">
-            <input type="text" id="filterOrderSearch" placeholder="Tìm theo số PO, đơn hàng, nước..." class="w-full text-xs border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 bg-slate-50 focus:bg-white transition" />
-            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+      <!-- 5M Optimization Banner Cards -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h3 class="font-extrabold text-sm tracking-wide uppercase text-amber-400">
+              Thuật Toán Điều Độ 5M (Man • Machine • Material • Method • Measurement)
+            </h3>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-slate-400 font-medium">Tổng ngày hoàn thành: <strong id="plan5mTotalDays" class="text-white">99.7 ngày SX chuẩn</strong></span>
+            <span class="text-slate-400 font-medium">Tỷ lệ OTD: <strong id="plan5mOtdRate" class="text-emerald-400">100% đúng hạn KD</strong></span>
           </div>
         </div>
-
-        <div class="flex items-center gap-2">
-          <span class="text-xs font-semibold text-slate-500" id="orderFilterCount"></span>
-          <div class="flex items-center gap-1 border-l border-slate-200 pl-2">
-            <button id="btnViewOrderGrouped" class="text-xs px-3 py-1.5 rounded-lg border font-bold transition">113 PO Gộp</button>
-            <button id="btnViewOrderRaw" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition">651 Dòng Size</button>
-            <button id="btnViewOrderGantt" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition">Gantt 5M</button>
-          </div>
-        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3" id="fiveMOptimizationCards"></div>
       </div>
 
-      <!-- Orders Table -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
-        <div class="overflow-x-auto custom-scrollbar border border-slate-100 rounded-xl">
-          <table class="w-full text-left border-collapse">
-            <thead id="ordersTableHead"></thead>
-            <tbody id="ordersTableBody"></tbody>
-          </table>
+      <!-- Main Layout: 8 cols Orders Table + 4 cols Interactive POH Calculator -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        
+        <!-- Left 8 cols: Filters & Orders Table -->
+        <div class="lg:col-span-8 space-y-4">
+          <!-- Filters & View Switchers -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2 flex-wrap flex-1">
+              <select id="filterOrderBatch" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium"></select>
+              <select id="filterOrderColor" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium"></select>
+              <select id="filterOrderCountry" class="text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium"></select>
+              <div class="relative flex-1 min-w-[180px]">
+                <input type="text" id="filterOrderSearch" placeholder="Tìm theo số PO, đơn hàng, nước..." class="w-full text-xs border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 bg-slate-50 focus:bg-white transition" />
+                <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-semibold text-slate-500" id="orderFilterCount"></span>
+              <div class="flex items-center gap-1 border-l border-slate-200 pl-2">
+                <button id="btnViewOrderGrouped" class="text-xs px-3 py-1.5 rounded-lg border font-bold transition">113 PO Gộp</button>
+                <button id="btnViewOrderRaw" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition">651 Dòng Size</button>
+                <button id="btnViewOrderGantt" class="text-xs px-3 py-1.5 rounded-lg border font-medium transition">Gantt 5M</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Orders Table Container -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
+            <div class="overflow-x-auto custom-scrollbar border border-slate-100 rounded-xl">
+              <table class="w-full text-left border-collapse">
+                <thead id="ordersTableHead"></thead>
+                <tbody id="ordersTableBody"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
+
+        <!-- Right 4 cols: Interactive 5M & POH Balancing Calculator -->
+        <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+          <div class="border-b border-slate-200 pb-3">
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+              <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
+              Bộ Tham Số Điều Độ POH 100% & Mô Phỏng 5M
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Tinh chỉnh tham số 5M để kiểm tra khả năng đáp ứng các đợt cao điểm xuất hàng (Tháng 08, 10, 11/2026 & 04/2027)</p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
+            <div>
+              <label class="block text-slate-600 font-medium mb-1">Sản lượng LVF yêu cầu (đôi/ngày):</label>
+              <input type="number" id="calcLvfDemand" value="650" min="200" max="1500" step="50" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div>
+              <label class="block text-slate-600 font-medium mb-1">Số khuôn Ép Đế hiện có (CCDC):</label>
+              <input type="number" id="calcMoldCount" value="12" min="6" max="24" step="1" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-600 font-medium mb-1">Phương án chạy Chuyền Cán Vải (Man & Material):</label>
+              <select id="calcFabricMode" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-slate-800 bg-white">
+                <option value="batch">Gom lô chuẩn: Cán 2 ngày/tuần, In/Chặt 3 ngày/tuần (Tối ưu POH & Vật tư)</option>
+                <option value="daily">Rải đều mỗi ngày 650 đôi (Dư giờ công, hao hụt vật tư)</option>
+              </select>
+            </div>
+            <div class="sm:col-span-2">
+              <label class="block text-slate-600 font-medium mb-1">Phương án bù công suất Ép Đế (Machine & Method):</label>
+              <select id="calcOutsoleMode" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-slate-800 bg-white">
+                <option value="preload_ot">Ép trước 2 tuần + Tăng ca 3.5h (Đủ 650đ/ngày)</option>
+                <option value="regular_only">Chỉ làm giờ HC 8h (Đạt 450–480đ/ngày - Thiếu hụt)</option>
+                <option value="two_shifts">Đi 2 ca / Tăng lên 17 khuôn (Đạt 680đ/ngày giờ HC)</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="pohCalculationResult" class="space-y-2.5 text-xs"></div>
+        </div>
+
       </div>
     </section>
 
@@ -362,8 +490,42 @@
         </div>
       </div>
 
-      <!-- Workstations Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="workstationsGrid"></div>
+      <!-- 7 Workstations Selector Buttons -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm">
+        <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2" id="workstationSelectorBtns"></div>
+      </div>
+
+      <!-- Active Workstation Header Card -->
+      <div id="activeWorkstationHeader" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm"></div>
+
+      <!-- Sub-Process Pipeline Cards Section -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-200 pb-3">
+          <div>
+            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2" id="subProcessTitle">
+              Chuỗi Công Đoạn Nhỏ & Bán Thành Phẩm Đầu Ra (Sub-BTP Pipeline)
+            </h3>
+            <p class="text-xs text-slate-500">Mỗi công đoạn nhỏ gắn với 1 mã Bán thành phẩm nhỏ. Nhập trực tiếp số lượng đôi hoàn thành trên từng thẻ hoặc bấm nút cộng nhanh</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button id="btnRunAllSubsteps" class="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+              <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+              <span>Chạy đồng loạt 1 ca cho Phân đoạn này</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="subProcessCardsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4"></div>
+      </div>
+
+      <!-- All Workstations Overview Grid -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="grid" class="w-4 h-4 text-amber-500"></i>
+          Tổng Thể Năng Lực Cả 7 Phân Đoạn Xưởng LAF
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5" id="workstationsGrid"></div>
+      </div>
     </section>
 
     <!-- ==================== TAB 4: KHO BTP NHỎ WIP (32 MÃ) ==================== -->
@@ -379,6 +541,10 @@
           <p class="text-xs text-slate-500">Kiểm kê tồn kho, duy trì lượng buffer an toàn 2-3 ngày, cảnh báo thiếu hụt hoặc dư thừa gối đầu</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="MESApp.openAdjustWipModal()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="plus-square" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span>Nhập tay Kiểm Kê / Nhập Kho BTP</span>
+          </button>
           <button onclick="MESApp.openUniversalImportModal('wip')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
             <i data-lucide="upload" class="w-3.5 h-3.5"></i>
             <span>Import Kiểm Kê (.XLSX)</span>
@@ -395,30 +561,46 @@
 
       <!-- Quick Metrics -->
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
           <div>
             <div class="text-xs text-slate-500 font-semibold">Tổng Tồn Kho WIP 32 BTP</div>
             <div class="text-xl font-extrabold text-slate-900" id="btpTotalWip">0 đôi</div>
           </div>
           <i data-lucide="layers" class="w-6 h-6 text-amber-500"></i>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
           <div>
-            <div class="text-xs text-slate-500 font-semibold">Số Mã Đạt Buffer An Toàn</div>
-            <div class="text-xl font-extrabold text-emerald-600" id="btpSafeCount">32 / 32 mã</div>
+            <div class="text-xs text-slate-500 font-semibold">Mã BTP Đạt Mức An Toàn (≥ 1.000 đôi)</div>
+            <div class="text-xl font-extrabold text-emerald-600" id="btpSafeCount">0 / 28 mã</div>
           </div>
           <i data-lucide="shield-check" class="w-6 h-6 text-emerald-500"></i>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between">
+        <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
           <div>
-            <div class="text-xs text-slate-500 font-semibold">Số Bộ Sẵn Sàng Bàn Giao LVF</div>
-            <div class="text-xl font-extrabold text-indigo-600">650 bộ đồng bộ</div>
+            <div class="text-xs text-slate-500 font-semibold">Buffer Dự Trữ Bình Quân</div>
+            <div class="text-xl font-extrabold text-indigo-600">2.5 – 3.0 Ngày SX</div>
           </div>
-          <i data-lucide="truck" class="w-6 h-6 text-indigo-500"></i>
+          <i data-lucide="clock" class="w-6 h-6 text-indigo-500"></i>
         </div>
       </div>
 
-      <!-- 32 BTP Table -->
+      <!-- Filter Controls for BTP Inventory -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-3 flex-wrap flex-1">
+          <div class="flex items-center gap-2">
+            <label class="text-xs font-semibold text-slate-600">Lọc theo Phân đoạn:</label>
+            <select id="filterBtpWorkstation" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-slate-50 font-medium">
+              <option value="all">Tất cả 7 Phân đoạn</option>
+            </select>
+          </div>
+          <div class="relative flex-1 min-w-[200px]">
+            <input type="text" id="filterBtpSearch" placeholder="Tìm theo mã BTP hoặc tên chi tiết..." class="w-full text-xs border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 bg-slate-50 focus:bg-white transition" />
+            <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory Table with Direct Edit Controls -->
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm">
         <div class="overflow-x-auto custom-scrollbar border border-slate-100 rounded-xl">
           <table class="w-full text-left border-collapse">
@@ -426,12 +608,14 @@
               <tr class="bg-slate-100 text-slate-700 text-xs uppercase tracking-wider font-bold">
                 <th class="p-3 text-center">STT</th>
                 <th class="p-3 text-left">Mã BTP</th>
-                <th class="p-3 text-left">Tên Bán Thành Phẩm Nhỏ (Output)</th>
+                <th class="p-3 text-left">Tên Bán Thành Phẩm Chi Tiết</th>
                 <th class="p-3 text-left">Phân Đoạn</th>
-                <th class="p-3 text-left">Công Đoạn Nhỏ Tạo Ra</th>
-                <th class="p-3 text-right">Tồn Kho Thực Tế</th>
-                <th class="p-3 text-center">Trạng Thái An Toàn</th>
-                <th class="p-3 text-center">Thao Tác</th>
+                <th class="p-3 text-left">Công Đoạn Tạo Ra</th>
+                <th class="p-3 text-left">Tiêu Chuẩn QC / Kỹ Thuật</th>
+                <th class="p-3 text-right">Tồn Kho Hiện Tại</th>
+                <th class="p-3 text-right">Tồn An Toàn</th>
+                <th class="p-3 text-center">Trạng Thái</th>
+                <th class="p-3 text-center">Điều Chỉnh Trực Tiếp</th>
               </tr>
             </thead>
             <tbody id="btpInventoryTableBody"></tbody>
@@ -450,12 +634,16 @@
             <i data-lucide="arrow-right-left" class="w-4 h-4 text-amber-500"></i>
             Quản Lý Chuyển Giao & Bàn Giao Bán Thành Phẩm (LAF → Phân Xưởng Gò LVF)
           </h2>
-          <p class="text-xs text-slate-500">Kiểm tra tự động 4 Chốt Chặn Kỹ Thuật (Ủ 24h, Kho 48h, Mài trước 3d, Đủ bộ đồng bộ) trước khi xuất giao</p>
+          <p class="text-xs text-slate-500">Kiểm tra tự động 4 Chốt Chặn Kỹ Thuật (Ủ 24h, Lưu kho 48h, Mài trước 3d, Kit 100% đồng bộ) trước khi xuất bàn giao</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <button onclick="MESApp.openManualHandoverModal()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <i data-lucide="send" class="w-3.5 h-3.5"></i>
             <span>Lập Phiếu Bàn Giao Mới</span>
+          </button>
+          <button onclick="MESApp.openUniversalImportModal('handover')" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+            <span>Import Nhật Ký (.XLSX)</span>
           </button>
           <button onclick="MESApp.exportHandoverToExcel()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
             <i data-lucide="download" class="w-3.5 h-3.5"></i>
@@ -464,39 +652,64 @@
         </div>
       </div>
 
-      <!-- 4 Technical Gates Banner -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-indigo-700">CHỐT 1: IN LỤA</span>
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+      <!-- 4 Technical Quality Gates Banner -->
+      <div class="space-y-3">
+        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+          <i data-lucide="shield-check" class="w-4 h-4 text-indigo-600"></i>
+          4 Chốt Chặn Kỹ Thuật Bắt Buộc Trước Khi Xuất Bán Thành Phẩm Sang Phân Xưởng LVF
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="technicalGatesChecklist">
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-700">CHỐT 1: IN LỤA</span>
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+            </div>
+            <div class="text-xs font-semibold text-slate-800">Cao su in lụa (BTP-IL-04)</div>
+            <div class="text-[11px] text-slate-500">Bắt buộc nhập kho ủ đủ ≥ 24 giờ trước khi giao sang LVF</div>
           </div>
-          <div class="text-xs font-semibold text-slate-800">Cao su in lụa (BTP-IL-04)</div>
-          <div class="text-[11px] text-slate-500">Bắt buộc nhập kho ủ đủ ≥ 24 giờ trước khi giao sang LVF</div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-700">CHỐT 2: CÁN ĐÙN & CHẶT</span>
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+            </div>
+            <div class="text-xs font-semibold text-slate-800">BTP Đùn & Chặt (BTP-TC-05)</div>
+            <div class="text-[11px] text-slate-500">Hoàn thành & nhập kho trước giờ Gò LVF ≥ 48 giờ</div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-700">CHỐT 3: MÀI ĐẾ</span>
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+            </div>
+            <div class="text-xs font-semibold text-slate-800">BTP Đế mài (BTP-MD-04)</div>
+            <div class="text-[11px] text-slate-500">Hoàn thành trước ngày Gò LVF ≥ 3 ngày (72 giờ)</div>
+          </div>
+          <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1 shadow-xs">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-indigo-700">CHỐT 4: ĐỒNG BỘ BỘ BTP</span>
+              <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+            </div>
+            <div class="text-xs font-semibold text-slate-800">Bộ BTP nhỏ 7 phân đoạn</div>
+            <div class="text-[11px] text-slate-500">Đầy đủ 100% chi tiết: thân, mũi, quai, tẩy, đế mài, logo</div>
+          </div>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-indigo-700">CHỐT 2: CÁN ĐÙN & CHẶT</span>
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
+      </div>
+
+      <!-- Synchronized Kit Counter Card -->
+      <div class="bg-gradient-to-r from-indigo-900 to-slate-900 text-white rounded-2xl p-5 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div class="text-xs text-indigo-300 font-semibold uppercase tracking-wider">Trạng Thái Đồng Bộ Bộ BTP Toàn Xưởng LAF</div>
+            <div class="text-2xl font-extrabold flex items-center gap-2 mt-1">
+              <span id="readySyncSetsCount">0</span>
+              <span class="text-sm font-medium text-slate-300">bộ BTP đồng bộ hoàn chỉnh sẵn sàng giao LVF</span>
+            </div>
           </div>
-          <div class="text-xs font-semibold text-slate-800">BTP Đùn & Chặt (BTP-TC-05)</div>
-          <div class="text-[11px] text-slate-500">Hoàn thành & nhập kho trước giờ Gò LVF ≥ 48 giờ</div>
+          <span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 font-bold text-xs border border-emerald-500/30">
+            Khóa Đồng Bộ Kit 100%
+          </span>
         </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-indigo-700">CHỐT 3: MÀI ĐẾ</span>
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
-          </div>
-          <div class="text-xs font-semibold text-slate-800">BTP Đế mài (BTP-MD-04)</div>
-          <div class="text-[11px] text-slate-500">Hoàn thành trước ngày Gò LVF ≥ 3 ngày (72 giờ)</div>
-        </div>
-        <div class="bg-white p-4 rounded-xl border border-slate-200 space-y-1">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-indigo-700">CHỐT 4: ĐỒNG BỘ BỘ BTP</span>
-            <i data-lucide="check-circle" class="w-4 h-4 text-emerald-500"></i>
-          </div>
-          <div class="text-xs font-semibold text-slate-800">Bộ BTP nhỏ 7 phân đoạn</div>
-          <div class="text-[11px] text-slate-500">Đầy đủ 100% chi tiết: thân, mũi, quai, tẩy, đế mài, logo</div>
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
+          <div id="syncSetsProgressBar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all duration-500" style="width: 45%;"></div>
         </div>
       </div>
 
@@ -535,6 +748,8 @@
           <p class="text-xs text-slate-500">Tổng hợp điểm nghẽn thực tế từ dữ liệu đầu vào TVS kết hợp giải pháp điều độ Kế hoạch 1</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+          <span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 font-semibold text-xs" id="kaizenOpenCount">0 Điểm nghẽn chờ bật</span>
+          <span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-semibold text-xs" id="kaizenAppliedCount">0 Giải pháp đang kích hoạt</span>
           <button onclick="MESApp.openManualKaizenModal()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
             <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-amber-400"></i>
             <span>Thêm Đề Xuất Kaizen 5M</span>
@@ -546,8 +761,9 @@
         </div>
       </div>
 
-      <!-- Kaizen Cards Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="kaizenListContainer"></div>
+      <!-- Kaizen Cards Grid with Interactive Toggles -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-5" id="kaizenCardsGrid"></div>
+      <div id="kaizenListContainer" class="hidden"></div>
     </section>
 
     <!-- ==================== TAB 7: BỘ THAM SỐ & MÔ PHỎNG 5M ==================== -->
@@ -558,311 +774,400 @@
         <div>
           <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <i data-lucide="sliders" class="w-4 h-4 text-amber-500"></i>
-            Bộ Tham Số Điều Độ POH 100% & Mô Phỏng Tối Ưu 5M
+            Mô Phỏng Độ Nhạy 5M & Tối Ưu Hóa Kế Hoạch Sản Xuất
           </h2>
-          <p class="text-xs text-slate-500">Tinh chỉnh các tham số 5M để phân tích độ nhạy và kiểm tra khả năng đáp ứng các đợt cao điểm xuất hàng</p>
+          <p class="text-xs text-slate-500">Thử nghiệm các kịch bản công suất, biến động số khuôn, phương thức gom lô và tăng ca</p>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-          <button id="btnRunSimulation" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition shadow-sm">
+        <div class="flex items-center gap-2">
+          <button id="btnRunSimulation" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg flex items-center gap-2 shadow-sm transition">
             <i data-lucide="play" class="w-4 h-4"></i>
             <span>Chạy Thuật Toán Tối Ưu Ngay</span>
           </button>
         </div>
       </div>
 
-      <!-- Parameter Controls Card -->
-      <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <!-- Parameter 1: LVF Demand -->
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-slate-800">Sản lượng LVF yêu cầu (đôi/ngày):</label>
-            <input type="number" id="simLvfDemand" min="400" max="1000" step="50" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold" />
-            <p class="text-[11px] text-slate-500">Định mức hiện tại của TVS: 650 đôi/ngày</p>
+      <!-- Simulation Parameter Controls -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <h3 class="font-bold text-slate-900 text-sm border-b border-slate-100 pb-2">Thông Số Đầu Vào Mô Phỏng 5M</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nhu cầu LVF (đôi/ngày):</label>
+            <input type="number" id="simLvfDemand" value="650" min="200" max="1500" step="50" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900" />
           </div>
-
-          <!-- Parameter 2: Molds Count -->
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-slate-800">Số khuôn Ép Đế hiện có (CCDC):</label>
-            <input type="number" id="simMolds" min="8" max="24" step="1" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold" />
-            <p class="text-[11px] text-slate-500">Hiện trạng: 12 bộ khuôn (40 đôi/khuôn/ngày)</p>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Số khuôn Ép Đế hiện có:</label>
+            <input type="number" id="simMolds" value="12" min="6" max="24" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900" />
           </div>
-
-          <!-- Parameter 3: Cán Vải Strategy -->
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-slate-800">Phương án chạy Chuyền Cán Vải:</label>
-            <select id="simCanVaiMode" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium">
-              <option value="gom_lo">Gom lô: Cán 2 ngày/tuần, In/Chặt 3 ngày/tuần (Khuyến nghị 5M)</option>
-              <option value="rai_deu">Rải đều mỗi ngày 650 đôi (Dư giờ công, hao hụt vật tư)</option>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Phương án Cán Vải:</label>
+            <select id="simCanVaiMode" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-medium">
+              <option value="batch">Gom lô 2 ngày/tuần (Chuẩn)</option>
+              <option value="daily">Rải đều mỗi ngày</option>
             </select>
-            <p class="text-[11px] text-slate-500">Quyết định điểm Man và Material</p>
           </div>
-
-          <!-- Parameter 4: Ép Đế Strategy -->
-          <div class="space-y-2">
-            <label class="text-xs font-bold text-slate-800">Phương án bù công suất Ép Đế:</label>
-            <select id="simEpDeMode" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium">
-              <option value="tang_ca">Ép trước 2 tuần + Tăng ca 3.5h (Đủ 650đ/ngày)</option>
-              <option value="gio_hc">Chỉ làm giờ HC 8h (Đạt 450đ/ngày - Thiếu hụt)</option>
-              <option value="hai_ca">Đi 2 ca / Tăng lên 17 khuôn (Đạt 680đ/ngày giờ HC)</option>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Bù công suất Ép Đế:</label>
+            <select id="simEpDeMode" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-medium">
+              <option value="preload_ot">Ép trước 2 tuần + Tăng ca 3.5h</option>
+              <option value="regular_only">Chỉ làm giờ HC (450đ/ngày)</option>
+              <option value="two_shifts">Đi 2 ca (680đ/ngày)</option>
             </select>
-            <p class="text-[11px] text-slate-500">Giải phóng điểm nghẽn chính của phân xưởng</p>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Chiến dịch màu (5 màu):</label>
+            <select id="simCampaignBatching" class="w-full border border-slate-300 rounded-lg px-3 py-2 bg-white font-medium">
+              <option value="true">Gom theo màu (Giảm 65% dừng máy)</option>
+              <option value="false">Đổi màu tự do theo PO</option>
+            </select>
           </div>
         </div>
+      </div>
 
-        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="simCampaignBatching" class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400" checked />
-            <span class="text-xs font-bold text-slate-800">Bật Gom Lô Chiến Dịch Theo Mã Màu (Color Campaign Batching)</span>
-          </label>
-          <span class="text-xs text-slate-500">Tiết kiệm 25-30 phút vệ sinh máy mỗi lần đổi mã màu trên máy 5 trục & máy đùn</span>
+      <!-- Comparison Matrix: Before vs After Kaizen vs Simulation -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+        <h3 class="font-bold text-slate-900 text-sm">Bảng So Sánh Hiệu Quả Trước vs Sau Kaizen 5M</h3>
+        <div class="overflow-x-auto custom-scrollbar border border-slate-100 rounded-xl">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
+                <th class="p-3">Yếu Tố 5M</th>
+                <th class="p-3 text-rose-700">Trước Kaizen (Dữ liệu LAF gốc)</th>
+                <th class="p-3 text-emerald-700">Sau Kaizen 5M (Kế hoạch 1 Tối ưu)</th>
+                <th class="p-3 text-indigo-700">Kịch Bản Đang Chạy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-slate-100">
+                <td class="p-3 font-bold text-slate-900">1. Man (Nhân sự & POH)</td>
+                <td class="p-3 text-rose-800">POH 68–72%, Cán vải dư giờ công, Chặt thiếu người</td>
+                <td class="p-3 text-emerald-800 font-semibold">POH đạt 95.2%, Gom lô cán vải, chuyển 5 NS phụ chặt & mài</td>
+                <td class="p-3 text-indigo-800 font-bold">POH 95.8% (Cân bằng dây chuyền chuẩn)</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="p-3 font-bold text-slate-900">2. Machine (12 Khuôn & Máy cán)</td>
+                <td class="p-3 text-rose-800">Thiếu 200 đôi/ngày khâu Ép đế (450đ vs 650đ cần), 42 lần đổi màu</td>
+                <td class="p-3 text-emerald-800 font-semibold">Ép đế pull trước 2 tuần + tăng ca 3.5h, gom 5 màu chỉ đổi trục 4 lần</td>
+                <td class="p-3 text-indigo-800 font-bold">12 khuôn phân bổ đúng tỷ lệ Size UK 3..9</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="p-3 font-bold text-slate-900">3. Material (Cao su & Vải)</td>
+                <td class="p-3 text-rose-800">Hao hụt 18% do cán rải rác và rửa trục 5-roller liên tục</td>
+                <td class="p-3 text-emerald-800 font-semibold">Giảm hao hụt còn &lt;4%, đồng bộ 84.3 tấn cao su và 48.6k m2 vải</td>
+                <td class="p-3 text-indigo-800 font-bold">Đồng bộ 100% định mức vật tư 113 PO</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="p-3 font-bold text-slate-900">4. Method (Phương pháp điều độ)</td>
+                <td class="p-3 text-rose-800">Lập kế hoạch xuôi truyền thống → Nghẽn đế và trễ hạn KD</td>
+                <td class="p-3 text-emerald-800 font-semibold">Backward Finite Scheduling lùi từ Ngày xuất KD (-5d, -6d, -7d, -8d, -19d)</td>
+                <td class="p-3 text-indigo-800 font-bold">100% PO hoàn tất đúng Ngày xuất KD</td>
+              </tr>
+              <tr class="border-b border-slate-100">
+                <td class="p-3 font-bold text-slate-900">5. Measurement (Đo lường & QC)</td>
+                <td class="p-3 text-rose-800">Không có chốt chặn thời gian ủ và lưu kho BTP</td>
+                <td class="p-3 text-emerald-800 font-semibold">Khóa cứng 4 Chốt Kỹ Thuật (Ủ 24h, Lưu kho 48h, Mài trước 3d, Kit đồng bộ)</td>
+                <td class="p-3 text-indigo-800 font-bold">Chất lượng đạt chuẩn xuất khẩu 19 quốc gia</td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
+
   </main>
 
-  <!-- ==================== MODAL OVERLAY & MODALS ==================== -->
-  <div id="modalOverlay" class="modal-overlay hidden">
-
-    <!-- Modal 1: Thêm Đơn Hàng Mới (Manual Order Entry) -->
-    <div id="modalNewOrder" class="app-modal modal-content p-6 hidden">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+  <!-- ==================== MODALS & DIALOGS ==================== -->
+  
+  <!-- Universal Modal Overlay -->
+  <div id="modalOverlay" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    
+    <!-- Modal 1: Thêm Đơn Hàng Mới (Nhập tay) -->
+    <div id="modalNewOrder" class="modal-card bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 hidden">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
           <i data-lucide="plus-circle" class="w-4 h-4 text-amber-500"></i>
-          Tiếp Nhận Đơn Đặt Hàng Kinh Doanh Mới & Tự Động Tính Lịch 5M
+          Thêm Đơn Đặt Hàng Kinh Doanh Mới (PO)
         </h3>
-        <button class="modal-close-btn text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="MESApp.closeAllModals()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      <form id="formNewOrder" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+
+      <form id="formNewOrder" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã Đơn Hàng (Order No):</label>
-            <input type="text" id="inputOrderNo" value="AE2608999" required class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50" />
+            <label class="block font-semibold text-slate-700 mb-1">Mã Đơn Hàng (*):</label>
+            <input type="text" id="inputOrderNo" required placeholder="VD: DH-2026-99" class="w-full border border-slate-300 rounded-lg p-2 font-mono" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Số PO Khách Hàng:</label>
-            <input type="text" id="inputOrderPoNo" value="0903999999-1" required class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold" />
+            <label class="block font-semibold text-slate-700 mb-1">Số PO (*):</label>
+            <input type="text" id="inputOrderPoNo" required placeholder="VD: 4500123456" class="w-full border border-slate-300 rounded-lg p-2 font-mono" />
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Quốc Gia Xuất:</label>
+            <input type="text" id="inputOrderCountry" required placeholder="VD: GERMANY" class="w-full border border-slate-300 rounded-lg p-2" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Thị Trường (Quốc Gia):</label>
-            <input type="text" id="inputOrderCountry" value="GERMANY" required class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Mã Màu (Color):</label>
-            <select id="inputOrderColor" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold">
-              <option value="LC1783">LC1783 (Đen Than)</option>
-              <option value="LC1786">LC1786 (Xanh Rêu Olive)</option>
-              <option value="LC1787">LC1787 (Xanh Navy)</option>
-              <option value="LC1784">LC1784 (Nâu Đất)</option>
-              <option value="LC1785">LC1785 (Vàng Bảo Hộ)</option>
+            <label class="block font-semibold text-slate-700 mb-1">Mã Màu:</label>
+            <select id="inputOrderColor" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-bold">
+              <option value="LC1783">LC1783</option>
+              <option value="LC1786">LC1786</option>
+              <option value="LC1787">LC1787</option>
+              <option value="LC1784">LC1784</option>
+              <option value="LC1785">LC1785</option>
             </select>
           </div>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Tổng Số Lượng (Đôi):</label>
-            <input type="number" id="inputOrderPairs" value="650" required min="1" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold" />
+            <label class="block font-semibold text-slate-700 mb-1">Tổng Số Đôi (*):</label>
+            <input type="number" id="inputOrderPairs" required min="1" placeholder="600" class="w-full border border-slate-300 rounded-lg p-2 font-bold" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Số Thùng (CLP):</label>
-            <input type="number" id="inputOrderBoxes" value="108" required min="1" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50" />
+            <label class="block font-semibold text-slate-700 mb-1">Số Thùng (CLP):</label>
+            <input type="number" id="inputOrderBoxes" min="1" placeholder="100" class="w-full border border-slate-300 rounded-lg p-2" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Đợt Đặt Hàng:</label>
-            <input type="number" id="inputOrderBatch" value="2" min="1" max="5" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Ngày Xuất Kinh Doanh:</label>
-            <input type="text" id="inputOrderExportDate" value="25/08/2026" placeholder="dd/mm/yyyy" required class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold text-emerald-800" />
+            <label class="block font-semibold text-slate-700 mb-1">Đợt Xuất (1-5):</label>
+            <input type="number" id="inputOrderBatch" min="1" max="5" value="1" class="w-full border border-slate-300 rounded-lg p-2 font-bold" />
           </div>
         </div>
 
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900">
-          <strong>Thuật toán 5M tự động tính lịch lùi:</strong> Ngày vào Gò LVF (-5 ngày), In lụa (-6 ngày, ủ 24h), Cán đùn & Chặt (-7 ngày, trữ 48h), Mài đế (-8 ngày, trữ 72h) và Ép đế (-19 ngày).
-        </div>
-
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" class="modal-close-btn px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg shadow-sm">
-            Phát Hành Kế Hoạch 5M
-          </button>
-        </div>
-      </form>
-    </div>
-
-    <!-- Modal 2: Lập Phiếu Bàn Giao (Manual Handover Entry) -->
-    <div id="modalNewHandover" class="app-modal modal-content p-6 hidden">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <i data-lucide="truck" class="w-4 h-4 text-indigo-600"></i>
-          Lập Phiếu Bàn Giao Bộ BTP Sang Phân Xưởng LVF
-        </h3>
-        <button class="modal-close-btn text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
-      </div>
-      <form id="formNewHandover" class="space-y-4">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Chọn Đơn Hàng / Số PO Bàn Giao:</label>
-          <select id="inputHandoverPo" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold"></select>
-        </div>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Số Lượng Bộ Đồng Bộ (Đôi):</label>
-            <input type="number" id="inputHandoverPairs" value="650" min="1" required class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold" />
-          </div>
-          <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Tổ Tiếp Nhận Tại LVF:</label>
-            <select id="inputHandoverReceiver" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium">
-              <option value="Chuyền Gò 1 & Chuyền May LVF">Chuyền Gò 1 & Chuyền May LVF</option>
-              <option value="Chuyền Gò 2 & Nồi Hấp Lưu Hóa LVF">Chuyền Gò 2 & Nồi Hấp Lưu Hóa LVF</option>
-            </select>
-          </div>
+          <label class="block font-semibold text-slate-700 mb-1">Ngày Xuất Kinh Doanh (*):</label>
+          <input type="date" id="inputOrderExportDate" required class="w-full border border-slate-300 rounded-lg p-2 font-medium" />
         </div>
 
-        <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-3 text-[11px] text-indigo-900 space-y-1">
-          <div class="font-bold flex items-center gap-1"><i data-lucide="shield-check" class="w-4 h-4 text-emerald-600"></i> Cam kết 4 Chốt Chặn Kỹ Thuật Khi Xuất Kho LAF:</div>
-          <div>• Cao su in lụa (BTP-IL-04) đã nhập kho ủ đủ ≥ 24 giờ.</div>
-          <div>• BTP Cán đùn & Chặt (BTP-TC-05) đã nhập kho trước giờ Gò ≥ 48 giờ.</div>
-          <div>• BTP Đế mài (BTP-MD-04) đã hoàn thành trước ngày Gò ≥ 3 ngày (72h).</div>
-        </div>
-
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" class="modal-close-btn px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-sm">
-            Xác Nhận Xuất Bàn Giao
-          </button>
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="MESApp.closeAllModals()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Hủy</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 font-bold text-slate-950 transition">Phát Hành Kế Hoạch 5M</button>
         </div>
       </form>
     </div>
 
-    <!-- Modal 3: Nhập Tay Sản Lượng Công Đoạn (Manual Substep Output) -->
-    <div id="modalNewSubstepOutput" class="app-modal modal-content p-6 hidden">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+    <!-- Modal 2: Lập Phiếu Bàn Giao Mới (Nhập tay) -->
+    <div id="modalNewHandover" class="modal-card bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 hidden">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+          <i data-lucide="send" class="w-4 h-4 text-indigo-600"></i>
+          Lập Phiếu Bàn Giao BTP Sang Phân Xưởng LVF
+        </h3>
+        <button onclick="MESApp.closeAllModals()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="formNewHandover" class="space-y-3 text-xs">
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Chọn Đơn Hàng / Số PO (*):</label>
+          <select id="inputHandoverPo" required class="w-full border border-slate-300 rounded-lg p-2 bg-white font-mono"></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Số Lượng Bộ Bàn Giao (*):</label>
+            <input type="number" id="inputHandoverPairs" required min="1" placeholder="600" class="w-full border border-slate-300 rounded-lg p-2 font-bold" />
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Tổ Nhận Thuộc LVF:</label>
+            <input type="text" id="inputHandoverReceiver" value="Chuyền Gò Ráp LVF 01" class="w-full border border-slate-300 rounded-lg p-2" />
+          </div>
+        </div>
+
+        <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+          <div class="font-bold text-amber-900 flex items-center gap-1.5">
+            <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-600"></i>
+            <span>Tự Động Kiểm Soát 4 Chốt Kỹ Thuật</span>
+          </div>
+          <p class="text-[11px] text-amber-800">
+            Hệ thống tự động kiểm tra thời gian ủ In lụa (≥ 24h), lưu kho Đùn/Chặt (≥ 48h) và Mài đế (≥ 3 ngày) trước khi phê duyệt phiếu.
+          </p>
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="MESApp.closeAllModals()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Hủy</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-white transition">Xác Nhận Xuất Bàn Giao</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Modal 3: Ghi Nhận Sản Lượng Công Đoạn (Nhập tay) -->
+    <div id="modalNewSubstepOutput" class="modal-card bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 hidden">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
           <i data-lucide="edit-3" class="w-4 h-4 text-amber-500"></i>
-          Ghi Nhận Sản Lượng Ca Cho 32 Công Đoạn Nhỏ
+          Ghi Nhận Sản Lượng Ca / Công Đoạn Nhỏ
         </h3>
-        <button class="modal-close-btn text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="MESApp.closeAllModals()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      <form id="formNewSubstepOutput" class="space-y-4">
+
+      <form id="formNewSubstepOutput" class="space-y-3 text-xs">
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Chọn Công Đoạn Nhỏ:</label>
-          <select id="inputSubstepSelect" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold"></select>
+          <label class="block font-semibold text-slate-700 mb-1">Chọn Công Đoạn Nhỏ / Mã BTP (*):</label>
+          <select id="inputSubstepSelect" required class="w-full border border-slate-300 rounded-lg p-2 bg-white"></select>
         </div>
-        <div class="grid grid-cols-2 gap-4">
+
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Sản Lượng Hoàn Thành (Đôi):</label>
-            <input type="number" id="inputSubstepAddedPairs" value="100" min="1" required class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-bold" />
+            <label class="block font-semibold text-slate-700 mb-1">Số Lượng Đôi Hoàn Thành (*):</label>
+            <input type="number" id="inputSubstepAddedPairs" required min="1" placeholder="650" class="w-full border border-slate-300 rounded-lg p-2 font-bold" />
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Tỷ Lệ Đạt QC (%):</label>
-            <input type="number" id="inputSubstepQc" value="99.5" step="0.1" min="80" max="100" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium" />
+            <label class="block font-semibold text-slate-700 mb-1">Chất Lượng / Đạt QC (%):</label>
+            <input type="number" id="inputSubstepQc" min="50" max="100" value="99.5" step="0.1" class="w-full border border-slate-300 rounded-lg p-2 font-bold" />
           </div>
         </div>
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" class="modal-close-btn px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg shadow-sm">
-            Lưu Ghi Nhận
-          </button>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="MESApp.closeAllModals()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Hủy</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 font-bold text-slate-950 transition">Lưu Ghi Nhận</button>
         </div>
       </form>
     </div>
 
-    <!-- Modal 4: Thêm Đề Xuất Kaizen 5M (Manual Kaizen Entry) -->
-    <div id="modalNewKaizen" class="app-modal modal-content p-6 hidden">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+    <!-- Modal 4: Thêm Đề Xuất Kaizen 5M (Nhập tay) -->
+    <div id="modalNewKaizen" class="modal-card bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 hidden">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
-          <i data-lucide="flame" class="w-4 h-4 text-amber-500"></i>
-          Thêm Mới Đề Xuất Cải Tiến Kaizen & Tối Ưu 5M
+          <i data-lucide="plus-circle" class="w-4 h-4 text-amber-500"></i>
+          Thêm Đề Xuất Kaizen 5M Mới
         </h3>
-        <button class="modal-close-btn text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="MESApp.closeAllModals()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      <form id="formNewKaizen" class="space-y-4">
-        <div class="grid grid-cols-2 gap-4">
+
+      <form id="formNewKaizen" class="space-y-3 text-xs">
+        <div class="grid grid-cols-2 gap-3">
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Phân Đoạn Áp Dụng:</label>
-            <select id="inputKaizenSegment" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium">
-              <option value="1. Chuyền Cán Vải">1. Chuyền Cán Vải</option>
-              <option value="2. Chuyền In Lụa">2. Chuyền In Lụa</option>
-              <option value="3. Cán Luyện - Luyện Kín">3. Cán Luyện - Luyện Kín</option>
-              <option value="4. Cán Luyện - Ép Đế">4. Cán Luyện - Ép Đế</option>
-              <option value="5. Cán Luyện - Mài Đế">5. Cán Luyện - Mài Đế</option>
-              <option value="6. Cán Luyện - Cán Đùn">6. Cán Luyện - Cán Đùn</option>
-              <option value="7. Cán Luyện - Tổ Chặt">7. Cán Luyện - Tổ Chặt</option>
+            <label class="block font-semibold text-slate-700 mb-1">Phân Đoạn Áp Dụng:</label>
+            <select id="inputKaizenSegment" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-medium">
+              <option value="Chuyền Ép Đế">Chuyền Ép Đế</option>
+              <option value="Chuyền Cán Vải">Chuyền Cán Vải</option>
+              <option value="Chuyền In Lụa">Chuyền In Lụa</option>
+              <option value="Tổ Chặt & Đột Dập">Tổ Chặt & Đột Dập</option>
+              <option value="Tổ Cán Luyện Kín">Tổ Cán Luyện Kín</option>
+              <option value="Tổ Mài & Đánh Kẽm">Tổ Mài & Đánh Kẽm</option>
+              <option value="Toàn Phân Xưởng LAF">Toàn Phân Xưởng LAF</option>
             </select>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-700 mb-1">Trụ Cột 5M Trọng Tâm:</label>
-            <select id="inputKaizenPillar" class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50 font-medium">
-              <option value="Machine & Method">Machine & Method (Máy & Phương pháp)</option>
-              <option value="Man & Measurement">Man & Measurement (Nhân sự & Đo lường)</option>
-              <option value="Material & Method">Material & Method (Vật tư & Quy trình)</option>
+            <label class="block font-semibold text-slate-700 mb-1">Trụ Cột 5M:</label>
+            <select id="inputKaizenPillar" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-bold">
+              <option value="Machine">Machine (Thiết bị & Khuôn)</option>
+              <option value="Man">Man (Nhân lực & POH)</option>
+              <option value="Material">Material (Vật tư & Hao hụt)</option>
+              <option value="Method">Method (Phương pháp điều độ)</option>
+              <option value="Measurement">Measurement (Đo lường & QC)</option>
             </select>
           </div>
         </div>
+
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Hiện Trạng / Điểm Nghẽn:</label>
-          <textarea id="inputKaizenIssue" rows="2" required placeholder="Mô tả sự cố hoặc lãng phí hiện tại..." class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50"></textarea>
+          <label class="block font-semibold text-slate-700 mb-1">Hiện Trạng & Điểm Nghẽn Gặp Phải (*):</label>
+          <textarea id="inputKaizenIssue" required rows="2" placeholder="Mô tả cụ thể sự lãng phí, điểm nghẽn hoặc sai số..." class="w-full border border-slate-300 rounded-lg p-2"></textarea>
         </div>
+
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Giải Pháp Kaizen 5M:</label>
-          <textarea id="inputKaizenSolution" rows="2" required placeholder="Giải pháp điều độ hoặc kỹ thuật..." class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50"></textarea>
+          <label class="block font-semibold text-slate-700 mb-1">Giải Pháp Kaizen Đề Xuất (*):</label>
+          <textarea id="inputKaizenSolution" required rows="2" placeholder="Giải pháp kỹ thuật, điều độ, bố trí nhân sự hoặc quy trình..." class="w-full border border-slate-300 rounded-lg p-2"></textarea>
         </div>
+
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Hiệu Quả Kỳ Vọng:</label>
-          <input type="text" id="inputKaizenResult" placeholder="Tăng POH lên 95%, giảm hao hụt vật tư..." class="w-full text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50" />
+          <label class="block font-semibold text-slate-700 mb-1">Hiệu Quả Dự Kiến Mang Lại:</label>
+          <input type="text" id="inputKaizenResult" placeholder="VD: Tăng POH thêm 15%, giảm thời gian dừng máy 30 phút..." class="w-full border border-slate-300 rounded-lg p-2" />
         </div>
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" class="modal-close-btn px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
-          <button type="submit" class="px-5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-lg shadow-sm">
-            Lưu Đề Xuất
-          </button>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="MESApp.closeAllModals()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Hủy</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 font-bold text-white transition">Lưu Đề Xuất</button>
         </div>
       </form>
     </div>
 
     <!-- Modal 5: Universal Import (.XLSX / CSV / Paste) -->
-    <div id="modalUniversalImport" class="app-modal modal-content p-6 hidden">
-      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+    <div id="modalUniversalImport" class="modal-card bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 hidden">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3">
         <div>
           <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2" id="importModalTitle">
             <i data-lucide="upload-cloud" class="w-4 h-4 text-indigo-600"></i>
-            Import Dữ Liệu Vào Hệ Thống
+            Universal Data Importer
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5" id="importModalDesc">Hỗ trợ file Excel (.xlsx), CSV hoặc dán trực tiếp dữ liệu</p>
+          <p class="text-xs text-slate-500" id="importModalDesc">Hỗ trợ đọc file Excel (.xlsx, .xls), CSV hoặc dán trực tiếp từ bảng tính</p>
         </div>
-        <button class="modal-close-btn text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button>
+        <button onclick="MESApp.closeAllModals()" class="text-slate-400 hover:text-slate-700">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
       </div>
-      <div class="space-y-4">
-        <div id="importFileDropzone" class="border-2 border-dashed border-slate-200 rounded-xl p-5 text-center hover:border-indigo-400 transition bg-slate-50/50">
-          <i data-lucide="file-spreadsheet" class="w-8 h-8 text-indigo-500 mx-auto mb-2"></i>
-          <p class="text-xs font-semibold text-slate-700">Chọn tệp Excel (.xlsx, .xls) hoặc CSV từ máy tính</p>
-          <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv,.tsv,.txt" class="mt-2 text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" />
+
+      <div class="space-y-4 text-xs">
+        
+        <!-- Drag & Drop Zone -->
+        <div id="importFileDropzone" class="border-2 border-dashed border-slate-300 hover:border-amber-500 rounded-2xl p-6 text-center cursor-pointer transition bg-slate-50 hover:bg-amber-50/50 space-y-2">
+          <i data-lucide="file-spreadsheet" class="w-10 h-10 text-slate-400 mx-auto"></i>
+          <div class="font-bold text-slate-800">Kéo thả file Excel (.xlsx) hoặc bấm vào đây để chọn</div>
+          <div class="text-[11px] text-slate-500">Được xử lý bởi SheetJS engine chuẩn xác đến từng ô dữ liệu</div>
+          <input type="file" id="importFileInput" accept=".xlsx, .xls, .csv" class="hidden" />
+        </div>
+
+        <div class="text-center text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+          — HOẶC DÁN TRỰC TIẾP DỮ LIỆU TỪ CLIPBOARD —
         </div>
 
         <div>
-          <label class="block text-xs font-semibold text-slate-700 mb-1">Hoặc Dán Trực Tiếp (Copy-Paste) Các Dòng Từ Excel / CSV Vào Đây:</label>
-          <textarea id="importPasteArea" rows="4" placeholder="Dán các cột: Ngày xuất KD, Quốc gia, Đơn hàng, PO, Màu, Size, Số đôi..." class="w-full text-xs font-mono border border-slate-200 rounded-lg p-2.5 bg-slate-50"></textarea>
+          <label class="block font-semibold text-slate-700 mb-1">Dán dữ liệu Copy từ Excel (Ctrl + V):</label>
+          <textarea id="importPasteArea" rows="4" placeholder="Dán các cột dữ liệu theo thứ tự tiêu đề vào đây..." class="w-full border border-slate-300 rounded-lg p-2.5 font-mono text-[11px] bg-slate-50 focus:bg-white transition"></textarea>
         </div>
 
-        <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
-          <button type="button" class="modal-close-btn px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg">Hủy</button>
-          <button id="btnExecuteImport" class="px-5 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-sm">
-            Thực Hiện Import
+        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+          <button type="button" onclick="MESApp.closeAllModals()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-100 transition">Hủy</button>
+          <button type="button" id="btnExecuteImport" class="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 font-bold text-white transition flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Thực Hiện Import</span>
           </button>
         </div>
       </div>
     </div>
+
   </div>
 
-  <!-- Toast Notification -->
-  <div id="toast" class="toast"></div>
+  <!-- Toast Notification Container -->
+  <div id="toast" class="toast hidden bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl border border-slate-800 flex items-center gap-3 text-xs z-50"></div>
 
-  <!-- Hidden file input for restore -->
-  <input type="file" id="fileRestoreBackup" accept=".json" class="hidden" />
+  <!-- Footer -->
+  <footer class="bg-slate-950 text-slate-400 text-xs py-4 border-t border-slate-800 mt-auto">
+    <div class="max-w-[1720px] mx-auto px-4 flex flex-wrap items-center justify-between gap-2">
+      <div>
+        <strong class="text-white">MES-anti</strong> • Dự án Điều độ & Quản trị Sản xuất 5M Phân xưởng LAF TVS
+      </div>
+      <div class="flex items-center gap-4 text-[11px]">
+        <span>Deploy: Vercel Ready</span>
+        <span>Thuật toán: Backward Finite 5M</span>
+        <span>Tiêu chuẩn: TVS Authentic 64.837 đôi</span>
+      </div>
+    </div>
+  </footer>
 
-  <!-- JavaScript Modules -->
+  <!-- Application Scripts -->
   <script src="js/data.js"></script>
   <script src="js/storage.js"></script>
   <script src="js/optimizer.js"></script>
   <script src="js/charts.js"></script>
   <script src="js/io.js"></script>
   <script src="js/app.js"></script>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      window.MESApp.init();
+      if (window.lucide) {
+        window.lucide.createIcons();
+      }
+    });
+  </script>
 </body>
 </html>
