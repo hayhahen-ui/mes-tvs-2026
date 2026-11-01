@@ -1,7 +1,9 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "name": "mes-anti",
   "cleanUrls": true,
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",
@@ -17,4 +19,3 @@
     }
   ]
 }
-

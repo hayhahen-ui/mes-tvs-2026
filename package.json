@@ -5,8 +5,7 @@
   "main": "index.html",
   "scripts": {
     "dev": "npx serve .",
-    "start": "npx serve .",
-    "build": "echo 'Build successful for Vercel deployment'"
+    "start": "npx serve ."
   },
   "keywords": [
     "mes",
@@ -22,4 +21,3 @@
   "author": "Antigravity Team",
   "license": "MIT"
 }
-
