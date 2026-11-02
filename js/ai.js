@@ -9,6 +9,8 @@
  *   gsk_ → Groq, sk-or- → OpenRouter, sk-ant- → Anthropic,
  *   AIza → Gemini, sk- → OpenAI, sk_ → Novita, còn lại DeepSeek
  *   (OpenAI-compatible). User vẫn chọn tay được provider/model.
+ *   Ngoại lệ: River AI không có tiền tố riêng — chọn tay 'River AI'
+ *   trong danh sách, model mặc định moonshotai/Kimi-K3.
  * - Chưa có key thì mọi phân tích dùng luật xác định (rule-based) ở
  *   app.js — AI chỉ làm giàu thêm lời giải thích, không phải đường
  *   duy nhất để xoay kế hoạch.
@@ -52,6 +54,25 @@ window.MESAI = {
       base: 'https://api.deepseek.com/v1',
       dialect: 'openai',
       defaultModel: 'deepseek-chat'
+    },
+    // River AI (02/11/2026, theo đúng code mẫu user gửi + endpoint đã dùng
+    // ở dự án Owly api/ai-passage.js): OpenAI-compatible, base
+    // https://api.river.ai/v1, Bearer, model mặc định moonshotai/Kimi-K3.
+    // Key River không có tiền tố nhận diện riêng nên user chọn tay
+    // 'River AI' trong danh sách Provider (không dùng tự nhận diện).
+    river: {
+      label: 'River AI',
+      base: 'https://api.river.ai/v1',
+      dialect: 'openai',
+      defaultModel: 'moonshotai/Kimi-K3',
+      models: [
+        'moonshotai/Kimi-K3',
+        'Qwen/Qwen3.8-27B-FP8',
+        'deepseek-ai/DeepSeek-V4.1-Flash-1017',
+        'deepseek-ai/DeepSeek-V4.1-Flash',
+        'zai-org/GLM-5.3-Flash',
+        'GLM-5.3'
+      ]
     },
     anthropic: {
       label: 'Anthropic (cần proxy, thường lỗi CORS từ trình duyệt)',

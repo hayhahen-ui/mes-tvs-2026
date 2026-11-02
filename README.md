@@ -175,6 +175,24 @@ toàn bộ rồi audit tổng thể. Kết quả audit, đối chiếu từng m�
   nhưng mỗi dự án lưu key ở ô riêng, app không tự lấy key dự án khác.
 - Tài nguyên local đổi sang `?v=5`.
 
+## 0f. ĐẤU NỐI RIVER AI (02/11/2026)
+
+Theo code mẫu user gửi (OpenAI client, base `https://api.river.ai/v1`,
+model `moonshotai/Kimi-K3`) và endpoint đã dùng ở dự án Owly
+(`api/ai-passage.js`): thêm provider **River AI** vào `js/ai.js`
+(OpenAI-compatible, Bearer, GET `/v1/models` để kiểm tra kết nối,
+POST `/chat/completions` để phân tích). Model mặc định
+`moonshotai/Kimi-K3`; các model khác trong console River (Qwen
+`Qwen3.8-27B-FP8`, DeepSeek `V4.1-Flash-1017`, GLM-5.3-Flash, GLM-5.3)
+hiện thành nút bấm điền nhanh vào ô Model ở tab 9 khi chọn River.
+Key River không có tiền tố nhận diện riêng nên phải chọn tay “River
+AI” trong danh sách Provider (không dùng tự nhận diện). Cách dùng:
+tab 9 → chọn River → dán key vào ô API Key (không gõ key vào chat)
+→ Lưu key → Kiểm tra kết nối (phải báo OK thì key mới hợp lệ) → dùng
+nút “Phân tích bằng AI” ở tab 7/tab 9. Đã kiểm tra endpoint sống:
+`GET /v1/models` không key trả 401 đúng chuẩn OpenAI. Tài nguyên local
+đổi sang `?v=6`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

@@ -1990,7 +1990,13 @@ window.MESApp = {
           </div>
         </div>
         <div id="aiKeyStatus" class="text-xs text-slate-600 mt-2"></div>
-        <p class="text-[11px] text-slate-500 mt-1">Lưu ý: Anthropic không cho gọi trực tiếp từ trình duyệt (lỗi CORS) — nếu dùng Anthropic mà test lỗi mạng, hãy đổi sang provider OpenAI-compatible (OpenAI, Groq, Novita, DeepSeek, OpenRouter). Key của dự án Trade/Owly có thể dán lại ở đây nếu anh muốn dùng chung 1 key, nhưng mỗi dự án lưu key ở ô riêng, không tự lấy key của dự án khác.</p>`;
+        ${prov === 'river' && window.MESAI.PROVIDERS.river.models ? `<div class="mt-2">
+          <span class="text-slate-600">Model River (bấm để điền vào ô Model):</span>
+          <div class="flex flex-wrap gap-1.5 mt-1">
+            ${window.MESAI.PROVIDERS.river.models.map(m => `<button onclick="document.getElementById('aiModelInput').value='${m}'" class="px-2 py-1 rounded-lg border border-slate-300 bg-white hover:bg-indigo-50 font-mono text-[11px] transition">${m}</button>`).join('')}
+          </div>
+        </div>` : ''}
+        <p class="text-[11px] text-slate-500 mt-1">Lưu ý: Anthropic không cho gọi trực tiếp từ trình duyệt (lỗi CORS) — nếu dùng Anthropic mà test lỗi mạng, hãy đổi sang provider OpenAI-compatible (OpenAI, Groq, Novita, DeepSeek, OpenRouter, River). Key River: chọn tay “River AI” trong danh sách Provider (key River không có tiền tố nhận diện riêng như các provider khác), model mặc định là moonshotai/Kimi-K3 theo đúng code mẫu anh gửi. Key của dự án Trade/Owly có thể dán lại ở đây nếu anh muốn dùng chung 1 key, nhưng mỗi dự án lưu key ở ô riêng, không tự lấy key của dự án khác.</p>`;
     }
 
     // --- Resolved / open lists ---
@@ -2052,6 +2058,16 @@ window.MESApp = {
     const provider = document.getElementById('aiProvider')?.value || '';
     const model = document.getElementById('aiModelInput')?.value || '';
     if (!key.trim()) { this.showToast('Dán key vào ô API Key trước khi lưu.', 'error'); return; }
+    // Chặn đoán nhầm provider: key không có tiền tố nhận diện (điển hình
+    // là key River) mà để tự nhận diện thì sẽ bị đoán thành DeepSeek và
+    // gọi nhầm base khác → 401 khó hiểu. Bắt chọn tay provider.
+    if (!provider) {
+      const knownPrefixes = ['gsk_', 'sk-or-', 'sk-ant-', 'AIza', 'sk-', 'sk_'];
+      if (!knownPrefixes.some(p => key.trim().startsWith(p))) {
+        this.showToast('Key này không có tiền tố nhận diện (ví dụ key River) — chọn tay Provider trong danh sách rồi lưu lại, đừng để tự nhận diện.', 'error');
+        return;
+      }
+    }
     window.MESAI.saveKey(key, provider, model);
     this.renderReoperationTab();
     this.showToast('Đã lưu key AI vào trình duyệt này (chỉ hiện ••••' + key.trim().slice(-4) + ').', 'success');
