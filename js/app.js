@@ -289,21 +289,39 @@ window.MESApp = {
     if (formNewKaizen) {
       formNewKaizen.onsubmit = (e) => {
         e.preventDefault();
+        const segName = document.getElementById('inputKaizenSegment').value;
+        const segMap = {
+          'Chuyền Cán Vải': 'CAN_VAI', 'Chuyền In Lụa': 'IN_LUA',
+          'Tổ Cán Luyện Kín': 'LUYEN_KIN', 'Chuyền Ép Đế': 'EP_DE',
+          'Tổ Mài & Đánh Kẽm': 'MAI_DE', 'Chuyền Cán Đùn': 'CAN_DUN',
+          'Tổ Chặt & Đột Dập': 'TO_CHAT', 'Toàn Phân Xưởng LAF': null
+        };
+        const newNorm = Number(document.getElementById('inputKaizenNewNorm')?.value);
+        const delayDays = Number(document.getElementById('inputKaizenDelayDays')?.value);
         const newItem = {
           id: `KZ-0${this.state.kaizenItems.length + 1}`,
-          segment: document.getElementById('inputKaizenSegment').value,
+          segment: segName,
+          segmentId: segMap[segName] !== undefined ? segMap[segName] : null,
           pillar: document.getElementById('inputKaizenPillar').value,
           issue: document.getElementById('inputKaizenIssue').value.trim(),
           solution: document.getElementById('inputKaizenSolution').value.trim(),
           result: document.getElementById('inputKaizenResult').value.trim() || 'Tối ưu hóa sản xuất',
-          applied: true
+          applied: false,
+          status: 'open',
+          resolvedDate: null,
+          resolvedNote: '',
+          newNorm: (!isNaN(newNorm) && newNorm > 0) ? newNorm : null,
+          delayDays: (!isNaN(delayDays) && delayDays > 0) ? delayDays : null,
+          appliedToPlan: false
         };
 
         this.state.kaizenItems.unshift(newItem);
         MESStorage.saveState(this.state);
         this.closeAllModals();
-        this.render();
-        this.showToast(`Đã lưu đề xuất Kaizen ${newItem.id}!`, 'success');
+        this.switchTab('kaizen_center');
+        this.showToast(`Đã lưu điểm nghẽn mới ${newItem.id} — xem đánh giá tác động ngay bên dưới thẻ của nó!`, 'success');
+        // Đánh giá tác động ngay cho điểm nghẽn mới (theo luật, không cần AI).
+        setTimeout(() => this.assessKaizen(0), 0);
       };
     }
   },
@@ -357,6 +375,8 @@ window.MESApp = {
       this.renderKaizenCenterTab();
     } else if (this.currentTab === 'simulation_tab') {
       this.renderSimulationTab();
+    } else if (this.currentTab === 'reoperation') {
+      this.renderReoperationTab();
     }
     // Re-trigger lucide icons
     if (window.lucide) {
@@ -384,7 +404,7 @@ window.MESApp = {
     const steps = [
       { num: '01', title: '113 PO Kinh Doanh', sub: '64.837 đôi • 5 màu', status: '100% Nạp Đầy Đủ', color: 'emerald' },
       { num: '02', title: 'Kế Hoạch 1 Tối Ưu 5M', sub: 'Lịch lùi từ Ngày xuất KD', status: score != null ? `OTD 100% • 5M: ${score}đ` : 'Chưa chạy — nhập nhu cầu', color: 'emerald' },
-      { num: '03', title: '7 Phân Đoạn LAF', sub: '71 NS • Cán/In/Luyện/Ép/Chặt', status: plantPoh != null ? `POH ${plantPoh}% (từ thực tế)` : 'Chưa nhập thực tế', color: 'amber' },
+      { num: '03', title: '7 Phân Đoạn LAF', sub: '63 NS • Cán/In/Luyện/Ép/Chặt', status: plantPoh != null ? `POH ${plantPoh}% (từ thực tế)` : 'Chưa nhập thực tế', color: 'amber' },
       { num: '04', title: '32 BTP Nhỏ Đồng Bộ', sub: `Wip: ${totalWip.toLocaleString('vi-VN')} đôi • Buffer 2-3d`, status: totalWip > 0 ? 'Kiểm Soát Nhịp Ca' : 'Chưa ghi nhận WIP', color: 'emerald' },
       { num: '05', title: '4 Cổng Kỹ Thuật QC', sub: 'Ủ 24h • Lưu 48h • Mài 3d', status: '100% Đạt Chuẩn', color: 'emerald' },
       { num: '06', title: 'Giao LVF & Xuất Khẩu', sub: '11.832 Thùng CLP • 19 Nước', status: (this.state.handoverLogs || []).length > 0 ? `Đã bàn giao ${(this.state.handoverLogs || []).length} lô` : 'Chưa có bàn giao ghi nhận', color: 'emerald' },
@@ -881,7 +901,7 @@ window.MESApp = {
     container.innerHTML = `
       <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700 space-y-1">
         <div class="text-amber-400 font-extrabold uppercase text-[11px] flex items-center justify-between">
-          <span>1. MAN (Nhân Sự - 71 NS)</span>
+          <span>1. MAN (Nhân Sự - 63 NS)</span>
           <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px]">${plantPoh != null ? 'POH ' + plantPoh + '%' : 'Chưa tính POH'}</span>
         </div>
         <p class="text-slate-300 leading-relaxed text-[11px]">Cán vải (9 NS) chạy gom lô 2 ngày/tuần; điều động 5 NS dôi dư phụ Kiểm chặt & Đánh kẽm Mài đế để toàn xưởng đạt nhịp <strong>${demand != null ? demand.toLocaleString('vi-VN') + ' đôi/ngày' : 'nhu cầu đã nhập'} giờ HC</strong>.</p>
@@ -1559,32 +1579,75 @@ window.MESApp = {
   /* =========================================================================
      TAB 6: ĐIỂM NGHẼN & KAIZEN LAF
      ========================================================================= */
+  // Trạng thái theo dõi của 1 kaizen (tương thích dữ liệu cũ).
+  kaizenStatus(kz) {
+    if (kz.status) return kz.status;
+    return kz.applied ? 'resolved' : 'open';
+  },
+
+  kaizenStatusLabel(status) {
+    return status === 'resolved' ? 'Đã tháo gỡ'
+      : (status === 'in_progress' ? 'Đang xử lý' : 'Chờ xử lý');
+  },
+
+  // Ảnh chụp kế hoạch hiện tại để đối chiếu trước/sau khi xoay.
+  capturePlanSnapshot() {
+    const sum = this.planResult && this.planResult.summary;
+    const poh = this.calculatePoh();
+    const demand = this.getPlanDemand();
+    return {
+      ts: new Date().toISOString(),
+      demand,
+      molds: this.state.simParams ? this.state.simParams.molds : null,
+      workDays: sum ? sum.workDays : null,
+      capEpDay: sum ? sum.capEpDay : null,
+      score5M: sum ? sum.score5M : null,
+      plantPoh: poh.plantPoh
+    };
+  },
+
+  logPlanRotation(trigger, note, before, after) {
+    if (!this.state.planRotations) this.state.planRotations = [];
+    this.state.planRotations.unshift({ trigger, note: note || '', before, after });
+    if (this.state.planRotations.length > 50) {
+      this.state.planRotations = this.state.planRotations.slice(0, 50);
+    }
+  },
+
   renderKaizenCenterTab() {
-    const openCount = this.state.kaizenItems.filter(k => !k.applied).length;
-    const appliedCount = this.state.kaizenItems.filter(k => k.applied).length;
+    const items = this.state.kaizenItems || [];
+    const openCount = items.filter(k => this.kaizenStatus(k) !== 'resolved').length;
+    const resolvedCount = items.filter(k => this.kaizenStatus(k) === 'resolved').length;
 
     const openEl = document.getElementById('kaizenOpenCount');
     const appliedEl = document.getElementById('kaizenAppliedCount');
-    if (openEl) openEl.textContent = `${openCount} Điểm nghẽn chờ bật`;
-    if (appliedEl) appliedEl.textContent = `${appliedCount} Giải pháp đang kích hoạt`;
+    if (openEl) openEl.textContent = `${openCount} Điểm nghẽn chưa tháo gỡ`;
+    if (appliedEl) appliedEl.textContent = `${resolvedCount} Điểm đã tháo gỡ`;
 
     const grid = document.getElementById('kaizenCardsGrid');
     if (!grid) return;
 
-    if (!this.state.kaizenItems || this.state.kaizenItems.length === 0) {
-      grid.innerHTML = '<p class="text-xs text-slate-500 bg-white border border-slate-200 rounded-2xl p-4">Chưa có điểm nghẽn / kaizen nào — dữ liệu mẫu cũ đã xóa. Thêm mới bằng form ở tab này khi phát sinh điểm nghẽn thật trên xưởng.</p>';
+    if (items.length === 0) {
+      grid.innerHTML = '<p class="text-xs text-slate-500 bg-white border border-slate-200 rounded-2xl p-4">Chưa có điểm nghẽn nào — bấm “Thêm Đề Xuất Kaizen 5M” ở trên để ghi nhận điểm nghẽn mới phát sinh trên xưởng.</p>';
       return;
     }
-    grid.innerHTML = this.state.kaizenItems.map((kz, idx) => `
-      <div class="rounded-2xl border ${kz.applied ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200 bg-white'} p-4 flex flex-col justify-between shadow-xs space-y-3">
+    const segOptions = (this.state.segments || []).map(x =>
+      `<option value="${x.id}">${x.segment}</option>`).join('');
+    grid.innerHTML = items.map((kz, idx) => {
+      const status = this.kaizenStatus(kz);
+      const badgeCls = status === 'resolved' ? 'bg-emerald-200 text-emerald-900'
+        : (status === 'in_progress' ? 'bg-indigo-200 text-indigo-900' : 'bg-amber-100 text-amber-900');
+      const cardCls = status === 'resolved' ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200 bg-white';
+      return `
+      <div class="rounded-2xl border ${cardCls} p-4 flex flex-col justify-between shadow-xs space-y-3">
         <div class="space-y-2.5 text-xs">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2">
               <span class="px-2 py-0.5 rounded bg-slate-900 text-white font-mono font-bold">${kz.id}</span>
               <span class="font-bold text-slate-900">${kz.segment}</span>
             </div>
-            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${kz.applied ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-100 text-amber-900'}">
-              ${kz.applied ? 'Đã áp dụng vào Kế hoạch 5M' : 'Đề xuất Kaizen'}
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold ${badgeCls}">
+              ${this.kaizenStatusLabel(status)}
             </span>
           </div>
 
@@ -1593,38 +1656,452 @@ window.MESApp = {
             <p class="leading-relaxed">${kz.issue || kz.problem}</p>
           </div>
 
+          ${kz.excelDifficulty ? `<details class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs"><summary class="font-bold cursor-pointer">Khó khăn gốc (file Excel LAF) — bấm để xem</summary><p class="leading-relaxed mt-1">${kz.excelDifficulty}</p></details>` : ''}
+
           <div class="p-2.5 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-950 text-xs">
-            <div class="font-bold text-[11px] uppercase text-indigo-800 mb-0.5">Giải pháp Điều độ & Kaizen 5M:</div>
+            <div class="font-bold text-[11px] uppercase text-indigo-800 mb-0.5">Giải pháp Kế hoạch 1 đề xuất:</div>
             <p class="leading-relaxed">${kz.solution}</p>
           </div>
 
           <div class="text-emerald-800 font-semibold text-xs flex items-center gap-1">
             <i data-lucide="trending-up" class="w-3.5 h-3.5 text-emerald-600"></i>
-            <span>Hiệu quả: ${kz.result || kz.impact}</span>
+            <span>Hiệu quả kỳ vọng: ${kz.result || kz.impact}</span>
+          </div>
+
+          ${status === 'resolved' ? `<div class="p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-950 text-xs">
+            <div class="font-bold">Đã tháo gỡ${kz.resolvedDate ? ' ngày ' + kz.resolvedDate : ''}</div>
+            ${kz.resolvedNote ? `<p class="mt-0.5">Biện pháp: ${kz.resolvedNote}</p>` : ''}
+            ${kz.newNorm ? `<p>Định mức mới áp vào kế hoạch: ${kz.newNorm} đôi/ngày.</p>` : ''}
+          </div>` : ''}
+
+          <div class="p-3 rounded-xl bg-white border border-slate-200 space-y-2">
+            <div class="font-bold text-slate-900">Theo dõi tháo gỡ — người dùng nhập, hệ thống xoay lại kế hoạch</div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-500 mb-0.5">Trạng thái:</label>
+                <select id="kzStatus_${idx}" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 bg-white font-semibold">
+                  <option value="open" ${status === 'open' ? 'selected' : ''}>Chờ xử lý</option>
+                  <option value="in_progress" ${status === 'in_progress' ? 'selected' : ''}>Đang xử lý</option>
+                  <option value="resolved" ${status === 'resolved' ? 'selected' : ''}>Đã tháo gỡ</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Ngày tháo gỡ:</label>
+                <input type="date" id="kzDate_${idx}" value="${kz.resolvedDate || ''}" class="w-full border border-slate-300 rounded-lg px-2 py-1.5" />
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Định mức mới (đôi/ngày, nếu có):</label>
+                <input type="number" id="kzNewNorm_${idx}" value="${kz.newNorm != null ? kz.newNorm : ''}" min="0" step="10" placeholder="VD 650" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold" />
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Trễ ước tính (ngày, nếu có):</label>
+                <input type="number" id="kzDelay_${idx}" value="${kz.delayDays != null ? kz.delayDays : ''}" min="0" step="1" placeholder="VD 3" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold" />
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Công đoạn bị ảnh hưởng:</label>
+                <select id="kzSegment_${idx}" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 bg-white">
+                  ${segOptions.replace(`value="${kz.segmentId || ''}"`, `value="${kz.segmentId || ''}" selected`)}
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Khuôn Ép đế mới (nếu đổi):</label>
+                <input type="number" id="kzMolds_${idx}" min="6" max="24" placeholder="Để trống = giữ nguyên" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold" />
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Phương án Ép đế mới:</label>
+                <select id="kzEpDeMode_${idx}" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 bg-white">
+                  <option value="">Giữ nguyên</option>
+                  <option value="preload_ot">Ép trước 2 tuần + Tăng ca 3.5h</option>
+                  <option value="regular_only">Chỉ làm giờ HC</option>
+                  <option value="two_shifts">Đi 2 ca</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-slate-500 mb-0.5">Phương án Cán vải mới:</label>
+                <select id="kzCanVaiMode_${idx}" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 bg-white">
+                  <option value="">Giữ nguyên</option>
+                  <option value="batch">Gom lô 2 ngày/tuần</option>
+                  <option value="daily">Rải đều mỗi ngày</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label class="block text-slate-500 mb-0.5">Biện pháp đã làm / đang làm:</label>
+              <textarea id="kzNote_${idx}" rows="2" placeholder="VD: Đã thay đầu ói, vệ sinh máy 5 trục, bố trí thêm 1 thợ kiểm..." class="w-full border border-slate-300 rounded-lg px-2 py-1.5">${kz.resolvedNote || ''}</textarea>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="MESApp.saveKaizenTracking(${idx})" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-emerald-600 hover:bg-emerald-500 text-white transition">Lưu trạng thái &amp; xoay lại kế hoạch</button>
+              <button onclick="MESApp.assessKaizen(${idx})" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 transition">Đánh giá tác động (theo luật)</button>
+              <button onclick="MESApp.analyzeKaizen(${idx})" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-indigo-600 hover:bg-indigo-500 text-white transition">Phân tích bằng AI</button>
+            </div>
+            <div id="kzImpact_${idx}" class="text-xs space-y-2"></div>
           </div>
         </div>
-
-        <div class="mt-3 pt-3 border-t border-slate-200 flex justify-end">
-          <button onclick="MESApp.toggleKaizen(${idx})" class="px-3.5 py-1.5 rounded-lg font-bold text-xs transition ${
-            kz.applied
-              ? 'bg-slate-200 hover:bg-slate-300 text-slate-800'
-              : 'bg-emerald-600 hover:bg-emerald-500 text-white'
-          }">
-            ${kz.applied ? 'Đang kích hoạt (Nhấp để tắt)' : 'Kích hoạt giải pháp Kaizen này'}
-          </button>
-        </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   },
 
+  // Lưu trạng thái tháo gỡ do user nhập, áp thay đổi vào kế hoạch
+  // (định mức công đoạn + tham số mô phỏng nếu có), chạy lại kế
+  // hoạch và ghi 1 lần xoay kế hoạch vào sổ (tab Vận hành lại).
+  // Lưu ý trung thực: định mức công đoạn ảnh hưởng POH + khả thi,
+  // còn số ngày SX / công suất Ép đế của bộ giải chỉ đổi khi tham số
+  // kế hoạch (nhu cầu, khuôn, phương án ép/cán) đổi — sổ xoay ghi cả
+  // hai mặt này để không tạo cảm giác kế hoạch đổi trong khi không đổi.
+  saveKaizenTracking(idx) {
+    const kz = this.state.kaizenItems[idx];
+    if (!kz) return;
+    const before = this.capturePlanSnapshot();
+    const getVal = (id) => document.getElementById(id);
+    const status = getVal(`kzStatus_${idx}`)?.value || 'open';
+    const date = getVal(`kzDate_${idx}`)?.value || null;
+    const note = getVal(`kzNote_${idx}`)?.value || '';
+    const newNorm = Number(getVal(`kzNewNorm_${idx}`)?.value);
+    const delayDays = Number(getVal(`kzDelay_${idx}`)?.value);
+    const segId = getVal(`kzSegment_${idx}`)?.value || kz.segmentId || null;
+    const molds = Number(getVal(`kzMolds_${idx}`)?.value);
+    const epDeMode = getVal(`kzEpDeMode_${idx}`)?.value || '';
+    const canVaiMode = getVal(`kzCanVaiMode_${idx}`)?.value || '';
+
+    kz.status = status;
+    kz.applied = status === 'resolved';
+    kz.resolvedDate = status === 'resolved' ? (date || new Date().toISOString().slice(0, 10)) : date;
+    kz.resolvedNote = note;
+    kz.newNorm = (!isNaN(newNorm) && newNorm > 0) ? newNorm : null;
+    kz.delayDays = (!isNaN(delayDays) && delayDays > 0) ? delayDays : null;
+    if (segId) kz.segmentId = segId;
+
+    let changed = [];
+    if (kz.newNorm != null && segId) {
+      const seg = (this.state.segments || []).find(x => x.id === segId);
+      if (seg) {
+        seg.capacity = kz.newNorm;
+        seg.poh = seg.capacity > 0 ? Math.round(((seg.actual || 0) / seg.capacity) * 1000) / 10 : null;
+        const ws = (this.state.workstations || []).find(w => w.id === segId);
+        if (ws) { ws.normCapacity = kz.newNorm; ws.pohPercent = seg.poh; }
+        changed.push(`định mức ${seg.segment} → ${kz.newNorm} đôi/ngày`);
+      }
+    }
+    const sp = this.state.simParams || {};
+    if (!isNaN(molds) && molds > 0) { sp.molds = molds; sp.outsoleMolds = molds; changed.push(`${molds} khuôn`); }
+    if (epDeMode) { sp.epDeMode = epDeMode; changed.push(`ép đế ${epDeMode}`); }
+    if (canVaiMode) { sp.canVaiMode = canVaiMode; changed.push(`cán vải ${canVaiMode}`); }
+    this.state.simParams = sp;
+
+    MESStorage.saveState(this.state);
+    this.runOptimization();
+    const after = this.capturePlanSnapshot();
+    if (status === 'resolved' || changed.length > 0) {
+      kz.appliedToPlan = true;
+      this.logPlanRotation(
+        `${kz.id} — ${status === 'resolved' ? 'đã tháo gỡ' : 'cập nhật trạng thái'}`,
+        [note, changed.length ? ('Thay đổi áp vào kế hoạch: ' + changed.join(', ')) : 'Không đổi tham số kế hoạch (chỉ ghi nhận trạng thái).'].filter(Boolean).join(' '),
+        before, after
+      );
+      MESStorage.saveState(this.state);
+    }
+    this.render();
+    this.showToast(status === 'resolved'
+      ? `Đã ghi nhận tháo gỡ ${kz.id} và xoay lại kế hoạch! Xem sổ xoay ở tab Vận hành lại.`
+      : `Đã lưu trạng thái ${kz.id}: ${this.kaizenStatusLabel(status)}.`, 'success');
+  },
+
+  // Đánh giá tác động theo luật (không cần AI, không bịa số):
+  // chạy thử bộ giải với tham số giả định từ form, đối chiếu POH +
+  // khả thi trước/sau. Không lưu gì cho tới khi user bấm Lưu.
+  assessKaizen(idx) {
+    const kz = this.state.kaizenItems[idx];
+    if (!kz) return;
+    const el = document.getElementById(`kzImpact_${idx}`);
+    const demand = this.getPlanDemand();
+    if (demand == null) {
+      if (el) el.innerHTML = '<p class="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2">Chưa đánh giá được — nhập nhu cầu LVF ở tab Kế Hoạch trước, vì mọi tác động đều tính so với nhu cầu đó.</p>';
+      return;
+    }
+    const getVal = (id) => document.getElementById(id);
+    const newNorm = Number(getVal(`kzNewNorm_${idx}`)?.value);
+    const segId = getVal(`kzSegment_${idx}`)?.value || kz.segmentId || null;
+    const molds = Number(getVal(`kzMolds_${idx}`)?.value);
+    const epDeMode = getVal(`kzEpDeMode_${idx}`)?.value || '';
+    const canVaiMode = getVal(`kzCanVaiMode_${idx}`)?.value || '';
+    const delayDays = Number(getVal(`kzDelay_${idx}`)?.value);
+
+    const beforePoh = this.calculatePoh();
+    const segBefore = segId ? beforePoh.segments.find(x => x.id === segId) : null;
+    // POH giả định nếu đổi định mức (thực tế giữ nguyên).
+    let segAfterPoh = segBefore ? segBefore.poh : null;
+    let plantAfterPoh = beforePoh.plantPoh;
+    if (segBefore && !isNaN(newNorm) && newNorm > 0) {
+      segAfterPoh = Math.round(((segBefore.actual || 0) / newNorm) * 1000) / 10;
+      const totalCapAfter = beforePoh.totalCap - segBefore.capacity + newNorm;
+      plantAfterPoh = (beforePoh.entered && totalCapAfter > 0)
+        ? Math.round((beforePoh.totalActual / totalCapAfter) * 1000) / 10 : beforePoh.plantPoh;
+    }
+    // Kế hoạch giả định nếu đổi tham số mô phỏng.
+    let planAfter = null;
+    try {
+      const hypo = { ...(this.state.simParams || {}) };
+      if (!isNaN(molds) && molds > 0) { hypo.molds = molds; hypo.outsoleMolds = molds; }
+      if (epDeMode) hypo.epDeMode = epDeMode;
+      if (canVaiMode) hypo.canVaiMode = canVaiMode;
+      planAfter = MESOptimizer.scheduleAllOrders(this.state.ordersGrouped, hypo).summary;
+    } catch (e) { planAfter = null; }
+    const sumBefore = this.planResult && this.planResult.summary;
+    if (el) {
+      el.innerHTML = `
+        <div class="p-3 rounded-xl bg-white border border-slate-300 space-y-2">
+          <div class="font-bold text-slate-900">Đánh giá tác động (theo luật — chưa lưu, chưa áp vào kế hoạch)</div>
+          <table class="w-full text-left border-collapse">
+            <thead><tr class="text-slate-500 font-bold"><th class="py-1">Chỉ tiêu</th><th class="py-1 text-right">Trước</th><th class="py-1 text-right">Sau giả định</th></tr></thead>
+            <tbody>
+              <tr class="border-t border-slate-100"><td class="py-1">POH ${segBefore ? segBefore.segment : 'công đoạn'}</td><td class="py-1 text-right">${segBefore && segBefore.poh != null ? segBefore.poh + '%' : '—'}</td><td class="py-1 text-right font-bold">${segAfterPoh != null ? segAfterPoh + '%' : '—'}</td></tr>
+              <tr class="border-t border-slate-100"><td class="py-1">POH nhà máy</td><td class="py-1 text-right">${beforePoh.plantPoh != null ? beforePoh.plantPoh + '%' : '—'}</td><td class="py-1 text-right font-bold">${plantAfterPoh != null ? plantAfterPoh + '%' : '—'}</td></tr>
+              <tr class="border-t border-slate-100"><td class="py-1">Công suất Ép đế</td><td class="py-1 text-right">${sumBefore ? sumBefore.capEpDay + ' đôi/ngày' : '—'}</td><td class="py-1 text-right font-bold">${planAfter ? planAfter.capEpDay + ' đôi/ngày' : '—'}</td></tr>
+              <tr class="border-t border-slate-100"><td class="py-1">Số ngày SX hết đơn</td><td class="py-1 text-right">${sumBefore ? sumBefore.workDays + ' ngày' : '—'}</td><td class="py-1 text-right font-bold">${planAfter ? planAfter.workDays + ' ngày' : '—'}</td></tr>
+              <tr class="border-t border-slate-100"><td class="py-1">Điểm 5M</td><td class="py-1 text-right">${sumBefore ? sumBefore.score5M + ' / 100' : '—'}</td><td class="py-1 text-right font-bold">${planAfter ? planAfter.score5M + ' / 100' : '—'}</td></tr>
+            </tbody>
+          </table>
+          ${planAfter && planAfter.capEpDay < demand ? `<p class="text-rose-700 font-bold">Sau giả định vẫn nghẽn Ép đế: ${planAfter.capEpDay} &lt; nhu cầu ${demand} đôi/ngày — cần thêm khuôn / tăng ca / đi 2 ca.</p>` : ''}
+          ${!isNaN(delayDays) && delayDays > 0 ? `<p class="text-amber-800">Trễ ước tính ${delayDays} ngày: các PO có lịch lùi rơi vào ${delayDays} ngày tới sẽ có nguy cơ trễ gò LVF tương ứng — kiểm tra lại lịch từng PO ở tab Đơn Hàng KD sau khi áp dụng.</p>` : ''}
+          <p class="text-slate-500">Muốn áp giả định này vào kế hoạch thật: bấm “Lưu trạng thái &amp; xoay lại kế hoạch” ở trên (kết quả sẽ ghi vào sổ xoay ở tab Vận hành lại).</p>
+        </div>`;
+    }
+  },
+
+  // Phân tích bằng AI (BYOK). Không có key → rơi về đánh giá theo luật.
+  async analyzeKaizen(idx, targetElId) {
+    const kz = this.state.kaizenItems[idx];
+    if (!kz) return;
+    const el = document.getElementById(targetElId || `kzImpact_${idx}`);
+    if (window.MESAI && !window.MESAI.getKey()) {
+      this.showToast('Chưa nhập key AI — dùng đánh giá theo luật thay thế (nhập key ở tab Vận hành lại để dùng AI).', 'info');
+      this.assessKaizen(idx);
+      return;
+    }
+    if (el) el.innerHTML = '<p class="text-slate-500">Đang gọi AI phân tích điểm nghẽn...</p>';
+    const seg = (this.state.segments || []).find(x => x.id === (kz.segmentId || ''));
+    const poh = this.calculatePoh();
+    const sum = this.planResult && this.planResult.summary;
+    const ctx = {
+      kaizen: kz,
+      segmentName: seg ? seg.segment : kz.segment,
+      segmentCapacity: seg ? seg.capacity : null,
+      segmentActual: seg ? seg.actual : null,
+      segmentPoh: seg ? seg.poh : null,
+      demand: this.getPlanDemand(),
+      planSummary: sum
+        ? `${sum.totalOrders} PO, ${sum.totalPairs} đôi, ${sum.workDays} ngày SX, Ép đế ${sum.capEpDay} đôi/ngày, đổi màu ${sum.colorChanges} lần, điểm 5M ${sum.score5M}`
+        : 'chưa có kế hoạch (chưa nhập nhu cầu)',
+      plantPoh: poh.plantPoh
+    };
+    const res = await window.MESAI.analyzeBottleneck(ctx);
+    if (!res.ok) {
+      if (el) el.innerHTML = `<p class="text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">${res.error}</p>`;
+      return;
+    }
+    if (!this.aiSuggestions) this.aiSuggestions = {};
+    this.aiSuggestions[idx] = res.parsed;
+    if (el) {
+      if (res.parsed) {
+        const sug = res.parsed;
+        el.innerHTML = `
+          <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 space-y-2">
+            <div class="font-bold text-indigo-950">Phân tích AI — ${kz.id} (kiểm tra lại trước khi áp dụng)</div>
+            <p><strong>Nguyên nhân gốc:</strong> ${sug.rootCause || '—'}</p>
+            <p><strong>Biện pháp đề xuất:</strong></p>
+            <ul class="list-disc list-inside space-y-0.5">${(sug.actions || []).map(a => `<li>${a}</li>`).join('') || '<li>—</li>'}</ul>
+            <p><strong>Tác động ước tính:</strong> ${sug.estimatedImpact ? JSON.stringify(sug.estimatedImpact) : '—'}</p>
+            <p><strong>Giải thích:</strong> ${sug.explanation || '—'}</p>
+            <p><strong>Đề xuất áp vào kế hoạch:</strong> ${sug.suggestedNorm != null ? `định mức mới ${sug.suggestedNorm} đôi/ngày; ` : ''}${sug.suggestedMolds != null ? `${sug.suggestedMolds} khuôn; ` : ''}${sug.suggestedEpDeMode ? `ép đế ${sug.suggestedEpDeMode}; ` : ''}${sug.suggestedCanVaiMode ? `cán vải ${sug.suggestedCanVaiMode}; ` : ''}${(sug.suggestedNorm == null && sug.suggestedMolds == null && !sug.suggestedEpDeMode && !sug.suggestedCanVaiMode) ? 'không có đề xuất số cụ thể' : ''}</p>
+            <button onclick="MESApp.applyAiSuggestion(${idx})" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-indigo-600 hover:bg-indigo-500 text-white transition">Điền đề xuất AI vào form (chưa áp — bấm Lưu để áp)</button>
+          </div>`;
+      } else {
+        el.innerHTML = `
+          <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 space-y-2">
+            <div class="font-bold text-indigo-950">Phân tích AI — ${kz.id} (AI trả về văn bản, không parse được JSON nên không tự điền form)</div>
+            <p class="whitespace-pre-wrap leading-relaxed">${String(res.raw || '').slice(0, 2000)}</p>
+            <p class="text-slate-500">Hãy đọc kỹ và tự điền định mức / tham số vào form rồi bấm Lưu.</p>
+          </div>`;
+      }
+    }
+  },
+
+  // Điền đề xuất AI vào form theo dõi (chưa áp — user bấm Lưu mới áp).
+  applyAiSuggestion(idx) {
+    const sug = this.aiSuggestions && this.aiSuggestions[idx];
+    if (!sug) return;
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+    setVal(`kzNewNorm_${idx}`, sug.suggestedNorm);
+    setVal(`kzMolds_${idx}`, sug.suggestedMolds);
+    setVal(`kzEpDeMode_${idx}`, sug.suggestedEpDeMode);
+    setVal(`kzCanVaiMode_${idx}`, sug.suggestedCanVaiMode);
+    setVal(`kzStatus_${idx}`, 'resolved');
+    this.showToast('Đã điền đề xuất AI vào form — kiểm tra lại rồi bấm “Lưu trạng thái & xoay lại kế hoạch” để áp dụng.', 'info');
+  },
+
+  // Nút cũ: giữ để code khác gọi không vỡ; nay chỉ đổi trạng thái,
+  // không tự ghi là đã tháo gỡ có biện pháp (phải nhập ở form).
   toggleKaizen(idx) {
-    if (!this.state.kaizenItems[idx]) return;
-    this.state.kaizenItems[idx].applied = !this.state.kaizenItems[idx].applied;
+    const kz = this.state.kaizenItems[idx];
+    if (!kz) return;
+    const next = this.kaizenStatus(kz) === 'resolved' ? 'open' : 'resolved';
+    kz.status = next;
+    kz.applied = next === 'resolved';
     MESStorage.saveState(this.state);
     this.runOptimization();
     this.render();
-    const item = this.state.kaizenItems[idx];
-    this.showToast(`Đã ${item.applied ? 'kích hoạt' : 'tắt'} giải pháp Kaizen ${item.id}!`, 'info');
+    this.showToast(`Đã đổi trạng thái ${kz.id} thành: ${this.kaizenStatusLabel(next)}.`, 'info');
+  },
+
+  /* =========================================================================
+     TAB 9: VẬN HÀNH LẠI SAU THÁO GỠ + KEY AI (BYOK)
+     ========================================================================= */
+  renderReoperationTab() {
+    // --- AI key section ---
+    const keyEl = document.getElementById('aiKeySection');
+    if (keyEl && window.MESAI) {
+      const hasKey = !!window.MESAI.getKey();
+      const prov = window.MESAI.getProvider();
+      keyEl.innerHTML = `
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <span class="px-2.5 py-1 rounded-full font-bold ${hasKey ? 'bg-emerald-100 text-emerald-900' : 'bg-amber-100 text-amber-900'}">${hasKey ? 'AI đã kết nối' : 'Chưa có key — đang dùng phân tích theo luật'}</span>
+          ${hasKey ? `<span class="text-slate-600">Provider: <strong>${window.MESAI.PROVIDERS[prov] ? window.MESAI.PROVIDERS[prov].label : prov}</strong> • Key: <strong>${window.MESAI.maskedKey()}</strong> • Model: <strong>${window.MESAI.getModel()}</strong></span>` : '<span class="text-slate-600">Key chỉ lưu ở trình duyệt này (localStorage), không đưa lên repo, không log. Nhập key của bất kỳ provider nào ở 2 dự án trước (OpenAI, Groq, Novita, DeepSeek, OpenRouter, Gemini) là chạy.</span>'}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mt-3 text-xs">
+          <div>
+            <label class="block text-slate-500 mb-0.5">Provider (để trống = tự nhận diện từ key):</label>
+            <select id="aiProvider" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 bg-white">
+              <option value="">Tự nhận diện từ tiền tố key</option>
+              ${Object.entries(window.MESAI.PROVIDERS).map(([id, pr]) => `<option value="${id}" ${prov === id ? 'selected' : ''}>${pr.label}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-500 mb-0.5">API Key (không gõ key vào chat):</label>
+            <input type="password" id="aiKeyInput" placeholder="Dán key vào đây" autocomplete="off" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono" />
+          </div>
+          <div>
+            <label class="block text-slate-500 mb-0.5">Model (để trống = mặc định của provider):</label>
+            <input type="text" id="aiModelInput" placeholder="${prov ? window.MESAI.PROVIDERS[prov].defaultModel : 'vd gpt-4o-mini'}" class="w-full border border-slate-300 rounded-lg px-2 py-1.5" />
+          </div>
+          <div class="flex items-end gap-2">
+            <button onclick="MESApp.saveAiKey()" class="px-3 py-1.5 rounded-lg font-bold bg-slate-900 text-white hover:bg-slate-800 transition">Lưu key</button>
+            <button onclick="MESApp.testAiKey()" class="px-3 py-1.5 rounded-lg font-bold bg-slate-100 border border-slate-300 hover:bg-slate-200 transition">Kiểm tra kết nối</button>
+            <button onclick="MESApp.clearAiKey()" class="px-3 py-1.5 rounded-lg font-bold bg-rose-50 border border-rose-200 text-rose-800 hover:bg-rose-100 transition">Xóa key</button>
+          </div>
+        </div>
+        <div id="aiKeyStatus" class="text-xs text-slate-600 mt-2"></div>
+        <p class="text-[11px] text-slate-500 mt-1">Lưu ý: Anthropic không cho gọi trực tiếp từ trình duyệt (lỗi CORS) — nếu dùng Anthropic mà test lỗi mạng, hãy đổi sang provider OpenAI-compatible (OpenAI, Groq, Novita, DeepSeek, OpenRouter). Key của dự án Trade/Owly có thể dán lại ở đây nếu anh muốn dùng chung 1 key, nhưng mỗi dự án lưu key ở ô riêng, không tự lấy key của dự án khác.</p>`;
+    }
+
+    // --- Resolved / open lists ---
+    const items = this.state.kaizenItems || [];
+    const resolved = items.filter(k => this.kaizenStatus(k) === 'resolved');
+    const open = items.filter(k => this.kaizenStatus(k) !== 'resolved');
+    const resEl = document.getElementById('reopResolvedList');
+    if (resEl) {
+      resEl.innerHTML = resolved.length === 0
+        ? '<p class="text-slate-500">Chưa có điểm nghẽn nào được tháo gỡ — sang tab Điểm Nghẽn & Kaizen, nhập trạng thái tháo gỡ cho từng điểm rồi quay lại đây chạy lại kế hoạch.</p>'
+        : resolved.map((kz) => {
+            const idx = items.indexOf(kz);
+            return `<div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs">
+              <div class="font-bold text-emerald-950">${kz.id} — ${kz.segment} ${kz.resolvedDate ? '• Tháo gỡ ngày ' + kz.resolvedDate : ''}</div>
+              ${kz.resolvedNote ? `<p class="text-emerald-900 mt-0.5">Biện pháp: ${kz.resolvedNote}</p>` : ''}
+              ${kz.newNorm ? `<p>Định mức mới: ${kz.newNorm} đôi/ngày.</p>` : ''}
+              <button onclick="MESApp.analyzeKaizen(${idx}, 'reopAiResult')" class="mt-2 px-3 py-1 rounded-lg font-bold bg-indigo-600 hover:bg-indigo-500 text-white transition">Phân tích lại bằng AI</button>
+            </div>`;
+          }).join('');
+    }
+    const openEl = document.getElementById('reopOpenList');
+    if (openEl) {
+      openEl.innerHTML = open.length === 0
+        ? '<p class="text-emerald-700 font-bold">Tất cả điểm nghẽn đã tháo gỡ.</p>'
+        : `<p>${open.length} điểm chưa tháo gỡ: ${open.map(k => k.id + ' (' + k.segment + ')').join(', ')}. Điểm mới phát sinh thì nhập ở tab Điểm Nghẽn & Kaizen (nút “Thêm Đề Xuất Kaizen 5M”), đánh giá tác động ngay tại thẻ của nó, rồi quay lại đây chạy lại kế hoạch.</p>
+           <button onclick="MESApp.switchTab('kaizen_center')" class="mt-2 px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-900 text-white hover:bg-slate-800 transition">Sang tab Điểm Nghẽn & Kaizen</button>`;
+    }
+    // Select for AI analysis
+    const sel = document.getElementById('reopKaizenSelect');
+    if (sel) {
+      sel.innerHTML = items.map((kz, i) => `<option value="${i}">${kz.id} — ${kz.segment} (${this.kaizenStatusLabel(this.kaizenStatus(kz))})</option>`).join('');
+    }
+    // Rotation history
+    const histEl = document.getElementById('reopRotations');
+    if (histEl) {
+      const rots = this.state.planRotations || [];
+      histEl.innerHTML = rots.length === 0
+        ? '<p class="text-slate-500">Chưa có lần xoay kế hoạch nào ghi lại. Mỗi lần anh lưu trạng thái tháo gỡ (có thay đổi) hoặc bấm “Chạy lại kế hoạch” ở đây, hệ thống sẽ ghi 1 dòng vào sổ này.</p>'
+        : `<table class="w-full text-left border-collapse">
+            <thead><tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider"><th class="p-2">Thời gian</th><th class="p-2">Kích hoạt bởi</th><th class="p-2">Ghi chú</th><th class="p-2 text-right">Ngày SX</th><th class="p-2 text-right">Ép đế</th><th class="p-2 text-right">Điểm 5M</th><th class="p-2 text-right">POH nhà máy</th></tr></thead>
+            <tbody>${rots.map(r => {
+              const t = new Date(r.before.ts).toLocaleString('vi-VN');
+              const fmt = (v, unit) => v != null ? v + unit : '—';
+              return `<tr class="border-b border-slate-100">
+                <td class="p-2">${t}</td><td class="p-2 font-bold">${r.trigger}</td><td class="p-2">${r.note || ''}</td>
+                <td class="p-2 text-right">${fmt(r.before.workDays, '')} → <strong>${fmt(r.after.workDays, '')}</strong></td>
+                <td class="p-2 text-right">${fmt(r.before.capEpDay, '')} → <strong>${fmt(r.after.capEpDay, '')}</strong></td>
+                <td class="p-2 text-right">${fmt(r.before.score5M, '')} → <strong>${fmt(r.after.score5M, '')}</strong></td>
+                <td class="p-2 text-right">${fmt(r.before.plantPoh, '%')} → <strong>${fmt(r.after.plantPoh, '%')}</strong></td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table>`;
+    }
+  },
+
+  saveAiKey() {
+    if (!window.MESAI) return;
+    const key = document.getElementById('aiKeyInput')?.value || '';
+    const provider = document.getElementById('aiProvider')?.value || '';
+    const model = document.getElementById('aiModelInput')?.value || '';
+    if (!key.trim()) { this.showToast('Dán key vào ô API Key trước khi lưu.', 'error'); return; }
+    window.MESAI.saveKey(key, provider, model);
+    this.renderReoperationTab();
+    this.showToast('Đã lưu key AI vào trình duyệt này (chỉ hiện ••••' + key.trim().slice(-4) + ').', 'success');
+  },
+
+  async testAiKey() {
+    if (!window.MESAI) return;
+    const statusEl = document.getElementById('aiKeyStatus');
+    if (statusEl) statusEl.textContent = 'Đang kiểm tra kết nối...';
+    const res = await window.MESAI.testConnection();
+    if (statusEl) statusEl.textContent = res.message;
+    this.showToast(res.message, res.ok ? 'success' : 'error');
+  },
+
+  clearAiKey() {
+    if (!window.MESAI) return;
+    window.MESAI.clearKey();
+    this.renderReoperationTab();
+    this.showToast('Đã xóa key AI khỏi trình duyệt này.', 'info');
+  },
+
+  // Chạy lại kế hoạch sau khi tháo gỡ: chụp trước, chạy, chụp sau, ghi sổ.
+  rerunPlanAfterRemoval() {
+    const demand = this.getPlanDemand();
+    if (demand == null) {
+      this.showToast('Nhập nhu cầu LVF ở tab Kế Hoạch trước khi chạy lại kế hoạch.', 'error');
+      return;
+    }
+    const before = this.capturePlanSnapshot();
+    this.runOptimization();
+    const after = this.capturePlanSnapshot();
+    this.logPlanRotation('Vận hành lại thủ công (tab Vận hành lại)', 'Chạy lại kế hoạch với các tháo gỡ và tham số hiện tại.', before, after);
+    MESStorage.saveState(this.state);
+    this.render();
+    const el = document.getElementById('reopResult');
+    if (el) {
+      el.innerHTML = `
+        <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs space-y-1">
+          <div class="font-bold text-emerald-950">Đã chạy lại kế hoạch sau tháo gỡ</div>
+          <p>Ngày SX: ${before.workDays != null ? before.workDays : '—'} → <strong>${after.workDays != null ? after.workDays : '—'}</strong> ngày • Ép đế: ${before.capEpDay != null ? before.capEpDay : '—'} → <strong>${after.capEpDay != null ? after.capEpDay : '—'}</strong> đôi/ngày • Điểm 5M: ${before.score5M != null ? before.score5M : '—'} → <strong>${after.score5M != null ? after.score5M : '—'}</strong> • POH nhà máy: ${before.plantPoh != null ? before.plantPoh + '%' : '—'} → <strong>${after.plantPoh != null ? after.plantPoh + '%' : '—'}</strong></p>
+          <p class="text-slate-600">Đã ghi vào sổ xoay kế hoạch bên dưới. Nếu số ngày SX / Ép đế không đổi mà POH đổi, nghĩa là tháo gỡ đã cải thiện POH và khả thi nhưng chưa đổi tham số bộ giải (khuôn, phương án ép/cán) — muốn đổi các số đó thì chỉnh ở tab Mô Phỏng hoặc form theo dõi rồi chạy lại.</p>
+        </div>`;
+    }
+  },
+
+  analyzeReopKaizen() {
+    const sel = document.getElementById('reopKaizenSelect');
+    const idx = sel ? Number(sel.value) : NaN;
+    if (isNaN(idx)) return;
+    this.analyzeKaizen(idx, 'reopAiResult');
   },
 
   /* =========================================================================

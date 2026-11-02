@@ -102,6 +102,79 @@ Theo yêu cầu của user, app mở lên chỉ còn dữ liệu thật, không 
   liệu audit gốc ở cột “Sau Kaizen” nêu trên. Tài nguyên local đổi sang
   `?v=4`.
 
+## 0e. AUDIT EXCEL LAF GỐC + KHÔI PHỤC TAB 7 + TAB VẬN HÀNH LẠI + AI BYOK (02/11/2026)
+
+User gửi file `Dữ liệu LAF.xlsx` (1 sheet LAF, 34 dòng) và yêu cầu đọc
+toàn bộ rồi audit tổng thể. Kết quả audit, đối chiếu từng mục với app:
+
+- **ĐÚNG, đã tích hợp đủ:** 7 phân đoạn (Cán vải, In lụa, Luyện kín,
+  Ép đế, Mài đế, Cán Đùn, Tổ Chặt); định mức Cán vải 2.650, In lụa 750,
+  Ép đế 450 đôi/ngày/12 khuôn; các chốt thời gian in lụa ủ 24h, đùn/
+  chặt nhập kho trước gò 48h, mài đế xong trước gò 3 ngày, ép đế trước
+  2 tuần; nhu cầu LVF 400–650 đôi/ngày (650 là số thật trong Excel,
+  không phải số mẫu — nhưng vẫn giữ cơ chế nhập nhu cầu, không cố định
+  650, theo yêu cầu ở mục 0d); 32 mã BTP.
+- **ĐÍNH CHÍNH QUAN TRỌNG — tab 7 không phải dữ liệu mẫu:** 6 kaizen
+  trong app chính là 6 nhóm khó khăn ở cột “Khó khăn” của Excel LAF
+  (Cán vải, In lụa, Ép đế, Cán Đùn, Tổ Chặt, Luyện kín + Mài đế). Bản
+  0d đã xóa nhầm chúng. Bản này **khôi phục đủ 6 mục**, mỗi mục có thêm
+  khối “Khó khăn gốc (file Excel LAF)” để xem nguyên văn, và chuyển
+  tab 7 sang **chế độ theo dõi**: mỗi điểm có trạng thái Chờ xử lý /
+  Đang xử lý / Đã tháo gỡ + ngày tháo gỡ + biện pháp đã làm + định mức
+  mới + trễ ước tính + tham số kế hoạch đổi theo (khuôn, phương án
+  ép/cán). User nhập xong bấm “Lưu trạng thái & xoay lại kế hoạch” thì
+  hệ thống áp thay đổi, chạy lại kế hoạch và ghi vào sổ xoay.
+  Bàn giao LVF thì Excel không có, nên việc xóa bàn giao mẫu ở 0d vẫn
+  đúng và giữ nguyên.
+- **THIẾU / CHƯA ĐỦ TRƯỚC BẢN NÀY (nay đã bổ sung):** Cán Đùn trong
+  Excel có 4 khó khăn con (cán 2 trục, 5 trục, đùn, 3 trục) nhưng app cũ
+  chỉ tóm tắt 1 mục — nay mục KZ-04 ghi đủ 4 ý trong khối Excel gốc;
+  KZ-06 gộp Luyện kín + Mài đế — nay ghi rõ cả 2 ý; rủi ro đổi màu làm
+  đứt đoạn của Ép đế và rủi ro kiểm chỉ đạt 50% định mức của Tổ Chặt
+  nay có nguyên văn trong khối Excel gốc.
+- **SAI SỐ CẦN SỬA (đã sửa):** (1) Nhân sự: tiêu đề Excel của 7 phân
+  đoạn cộng lại là **63 NS** (9+7+7+10+8+11+11), còn **71** là tổng nhân
+  sự theo từng công đoạn nhỏ (có người kiêm nhiều công đoạn nên cộng
+  trùng) — app trước ghi 71 NS ở header/Dashboard là sai theo tiêu đề
+  Excel, nay sửa thành 63 NS; bảng POH vẫn dùng định biên theo tiêu đề
+  (63). (2) Tổ Chặt: định mức app cũ 650 chính là nhu cầu LVF, không
+  phải định mức Excel — Excel ghi khâu Kiểm chỉ 500đ/ngày là nghẽn
+  thật, nay sửa định mức Tổ Chặt thành **500** (sửa được lại ở bảng POH
+  nếu xưởng đo khác). (3) Các hệ số chưa có trong Excel, vẫn là giả
+  định cần user xác nhận: cao su 1,3 kg/đôi, vải 0,75 m²/đôi, Luyện kín
+  800 và Cán Đùn 750 đôi/ngày (Excel chỉ cho số mẻ/ngày và số máy),
+  mốc Gò LVF −5 ngày (Excel chỉ cho các mốc tương đối: ủ 24h, lưu 48h,
+  mài trước 3 ngày, ép trước 2 tuần). (4) Đơn hàng KD không có trong
+  file Excel này — đơn hàng vẫn lấy từ dữ liệu đơn TVS (data.js), file
+  này không kiểm chứng được đơn hàng.
+- **TAB 9 MỚI — Vận Hành Lại Sau Tháo Gỡ:** liệt kê điểm đã tháo gỡ và
+  điểm chưa tháo gỡ, nút “Chạy lại kế hoạch ngay” (chụp trước/sau rồi
+  ghi sổ), sổ xoay kế hoạch (tối đa 50 dòng: thời gian, kích hoạt bởi,
+  ngày SX, Ép đế, điểm 5M, POH nhà máy trước → sau), và phân tích 1
+  điểm nghẽn bằng AI. Điểm mới phát sinh: nhập ở tab 7 (form đã thêm
+  định mức bị ảnh hưởng + trễ ước tính + lựa chọn Cán Đùn), hệ thống tự
+  đánh giá tác động ngay tại thẻ của nó, rồi sang tab 9 chạy lại.
+- **ĐÁNH GIÁ TÁC ĐỘNG (theo luật, không cần AI):** chạy thử bộ giải với
+  tham số giả định từ form, đối chiếu POH công đoạn, POH nhà máy, công
+  suất Ép đế, số ngày SX, điểm 5M trước/sau — chưa lưu gì cho tới khi
+  user bấm Lưu. Lưu ý trung thực đã ghi trong code: định mức công đoạn
+  đổi thì POH + khả thi đổi, còn số ngày SX / Ép đế của bộ giải chỉ đổi
+  khi tham số kế hoạch (nhu cầu, khuôn, phương án ép/cán) đổi.
+- **AI BYOK (js/ai.js, theo mẫu Trade/Owly):** tab 9 có ô nhập key, chọn
+  provider (để trống = tự nhận diện từ tiền tố: gsk_ Groq, sk-or-
+  OpenRouter, sk-ant- Anthropic, AIza Gemini, sk- OpenAI, sk_ Novita,
+  còn lại DeepSeek), chọn model, nút Lưu / Kiểm tra kết nối / Xóa key.
+  Key chỉ lưu ở localStorage máy user (`mes-ai-key-v1`), UI chỉ hiện
+  ••••abcd, không vào repo, không log. Có key thì nút “Phân tích bằng
+  AI” ở tab 7/tab 9 gọi đúng provider đó, trả JSON (nguyên nhân gốc,
+  biện pháp, tác động ước tính, định mức/khuôn/phương án đề xuất) rồi
+  điền vào form theo dõi — user kiểm tra rồi bấm Lưu mới áp dụng.
+  Chưa có key thì tự dùng đánh giá theo luật. Anthropic không gọi trực
+  tiếp được từ trình duyệt (lỗi CORS) — UI báo rõ và khuyên dùng
+  provider OpenAI-compatible. Key của Trade/Owly có thể dán lại ở đây,
+  nhưng mỗi dự án lưu key ở ô riêng, app không tự lấy key dự án khác.
+- Tài nguyên local đổi sang `?v=5`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

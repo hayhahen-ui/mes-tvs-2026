@@ -45,8 +45,13 @@ window.MESStorage = {
   // Giữ lại: đơn hàng KD (ordersGrouped/ordersRaw), cấu trúc xưởng
   // (7 phân đoạn, 32 công đoạn nhỏ, định biên, định mức, thiết bị, khuôn,
   // lịch lùi). Xóa: sản lượng "hôm nay", tồn WIP, POH/OEE mẫu, bàn giao
-  // LVF mẫu, kaizen mẫu, nhật ký mẫu. POH/OEE từ nay chỉ có khi user nhập
+  // LVF mẫu, nhật ký mẫu. POH/OEE từ nay chỉ có khi user nhập
   // sản lượng thực tế ở bảng POH (tab Kế Hoạch) — không còn số mẫu tĩnh.
+  // ĐÍNH CHÍNH 02/11/2026 (audit Excel LAF gốc): 6 kaizen ở tab 7 KHÔNG
+  // phải dữ liệu mẫu — đó là khó khăn gốc từ file Excel LAF (cột Khó
+  // khăn), nên hàm này KHÔNG được xóa kaizen nữa, mà chỉ chuẩn hóa
+  // trường theo dõi (status/resolved...) cho chúng. Bàn giao LVF thì
+  // Excel không có, nên xóa bàn giao vẫn đúng.
   // Nhu cầu LVF cũng không còn mặc định 650: simParams.lvfDemand = null
   // cho tới khi user nhập. data.js vẫn giữ bản gốc để đối chiếu, nhưng
   // state chạy thực tế luôn qua hàm này nên app mở lên là sạch mẫu.
@@ -77,11 +82,13 @@ window.MESStorage = {
       p.wip_stock = 0;
     });
     state.handoverLogs = [];
-    state.kaizenItems = [];
+    // Kaizen gốc được giữ nguyên; chỉ chuẩn hóa trường theo dõi.
+    (state.kaizenItems || []).forEach(k => this.normalizeKaizen(k));
+    if (!state.planRotations) state.planRotations = [];
     state.activityLog = [{
       ts: new Date().toISOString(),
       action: 'CLEAR_SAMPLE_DATA',
-      detail: 'Đã xóa dữ liệu mẫu, chỉ giữ đơn hàng KD + cấu trúc xưởng. Nhập nhu cầu LVF và sản lượng thực tế để chạy kế hoạch và tính POH.'
+      detail: 'Đã xóa dữ liệu mẫu, chỉ giữ đơn hàng KD + cấu trúc xưởng + 6 điểm nghẽn gốc LAF. Nhập nhu cầu LVF và sản lượng thực tế để chạy kế hoạch và tính POH.'
     }];
     state.simParams = {
       lvfDemand: null,
@@ -92,6 +99,21 @@ window.MESStorage = {
     };
     state.sampleDataCleared = true;
     return state;
+  },
+
+  // Chuẩn hóa 1 kaizen về chế độ theo dõi: status 'open' | 'in_progress'
+  // | 'resolved'. Trường applied cũ (giải pháp đã có trong Kế hoạch 1)
+  // KHÔNG đồng nghĩa với "đã tháo gỡ" — tháo gỡ chỉ khi user tự nhập
+  // ở tab 7, nên status mặc định luôn là 'open' cho dữ liệu gốc.
+  normalizeKaizen(k) {
+    if (!k || typeof k !== 'object') return k;
+    if (!k.status) k.status = 'open';
+    if (k.resolvedDate === undefined) k.resolvedDate = null;
+    if (k.resolvedNote === undefined) k.resolvedNote = '';
+    if (k.newNorm === undefined) k.newNorm = null;
+    if (k.delayDays === undefined) k.delayDays = null;
+    if (k.appliedToPlan === undefined) k.appliedToPlan = false;
+    return k;
   },
 
   // Enrich one workstation with the fields tab 3's header/cards read.
@@ -220,11 +242,19 @@ window.MESStorage = {
       if (o.total_boxes == null && o.totalCartons != null) o.total_boxes = o.totalCartons;
     });
     (state.handoverLogs || []).forEach(h => this.normalizeHandover(h));
+    // Khôi phục kaizen gốc cho trình duyệt đã bị bản trước xóa sạch:
+    // nguồn là data.js (đã bổ sung excelDifficulty + segmentId).
+    if ((!state.kaizenItems || state.kaizenItems.length === 0)
+        && window.TVS_MASTER_DATA && window.TVS_MASTER_DATA.kaizenItems) {
+      state.kaizenItems = JSON.parse(JSON.stringify(window.TVS_MASTER_DATA.kaizenItems));
+    }
     (state.kaizenItems || []).forEach(k => {
       k.segment = k.segment || k.section || '';
       k.issue = k.issue || k.problem || '';
       k.result = k.result || k.impact || '';
+      this.normalizeKaizen(k);
     });
+    if (!state.planRotations) state.planRotations = [];
     if (!state.simParams) state.simParams = { lvfDemand: null, molds: 12, canVaiMode: 'batch', epDeMode: 'preload_ot', campaignBatching: true };
     if (state.simParams.lvfDemand === 650 && !state.sampleDataCleared) {
       // Nhu cầu 650 cũ chỉ là mặc định mẫu, không phải số user nhập.
@@ -435,7 +465,12 @@ window.MESStorage = {
       segments: this.buildSegments(workstations),
       subProcesses: this.buildSubProcesses(workstations),
       handoverLogs: [],
-      kaizenItems: [],
+      kaizenItems: JSON.parse(JSON.stringify(md.kaizenItems)).map(k => this.normalizeKaizen({
+        ...k,
+        segment: k.segment || k.section || '',
+        issue: k.issue || k.problem || '',
+        result: k.result || k.impact || ''
+      })),
       before5M: md.before5M,
       after5M: md.after5M,
       moldAlloc: md.moldAlloc,
@@ -448,7 +483,7 @@ window.MESStorage = {
       {
         ts: new Date().toISOString(),
         action: 'INIT_SYSTEM',
-        detail: 'Đã nạp 113 PO KD (651 dòng size) + cấu trúc 7 phân đoạn & 32 công đoạn. Dữ liệu mẫu đã xóa: nhập nhu cầu LVF và sản lượng thực tế để chạy kế hoạch và tính POH.'
+        detail: 'Đã nạp 113 PO KD (651 dòng size) + 6 điểm nghẽn gốc LAF (tab 7) + cấu trúc 7 phân đoạn & 32 công đoạn. Dữ liệu mẫu đã xóa (sản lượng hôm nay, WIP, POH/OEE mẫu, bàn giao mẫu): nhập nhu cầu LVF và sản lượng thực tế để chạy kế hoạch và tính POH.'
       }
     ];
 

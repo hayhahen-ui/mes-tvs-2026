@@ -412,7 +412,7 @@ window.TVS_MASTER_DATA = {
         shortName: 'Tổ Chặt',
         totalHeadcount: 11,
         targetDailyLvf: 650,
-        normCapacity: 650,
+        normCapacity: 500,  // AUDIT 02/11/2026: Excel LAF — khâu Kiểm chỉ 500đ/ngày là nghẽn thật của Tổ Chặt, không phải 650 (650 là nhu cầu LVF).
         actualToday: 645,
         pohPercent: 93.0,
         oeePercent: 91.2,
@@ -519,7 +519,9 @@ window.TVS_MASTER_DATA = {
         problem: 'Năng lực cán 5 NS đạt 2.650 đôi/ngày nhưng LVF chỉ cần 650 đôi/ngày (chỉ làm 2-3h/ngày). Làm rời rạc từng ngày gây hao hụt định mức vật tư, dư giờ công hành chính và vật tư không đồng bộ.',
         solution: 'Thiết lập lịch Gom Lô Đồng Bộ 5M: Cán vải cố định 2 ngày/tuần, In tẩy & Chặt tẩy+quai 3 ngày/tuần; điều động nhân sự dôi dư sang phụ Kiểm chặt & Đánh kẽm Mài đế để đạt POH > 95% trong giờ HC.',
         impact: 'Tiết kiệm 14% hao hụt vật tư mép vải, tăng POH chuyền Cán vải từ 62% lên 95.5%.',
-        applied: true
+        applied: true,
+        segmentId: 'CAN_VAI',
+        excelDifficulty: "Excel LAF, cột Khó khăn (Cán vải): Công đoạn để ra được sản phẩm tối thiểu từ 5-6 người, thời gian làm việc chỉ mất 2-3h/ngày. Các công đoạn phải làm cố định theo ngày và không rải sản lượng tính theo đồng bộ để làm sẽ dẫn đến hao hụt định mức vật tư. Thời gian làm việc các công đoạn không làm hết công suất trong giờ hành chính. Vật tư không đồng bộ."
       },
       {
         id: 'KZ-02',
@@ -527,7 +529,9 @@ window.TVS_MASTER_DATA = {
         problem: 'Cao su phải nhập kho trước 12h mới in, sau in phải ủ 24h mới giao LVF. Năng lực 750đ/ngày nhưng LVF chỉ lấy 400-650đ/ngày.',
         solution: 'Áp dụng chốt chặn Barcode nhập phôi trước 11:30 sáng; gom in theo chiến dịch 5 mã màu thật (LC1783 → LC1786 → LC1787 → LC1784 → LC1785) trong giới hạn bồn ủ 24h-36h.',
         impact: 'Đảm bảo 100% lô giao LVF đủ 24h ủ khô cho toàn bộ 64.837 đôi xuất khẩu.',
-        applied: true
+        applied: true,
+        segmentId: 'IN_LUA',
+        excelDifficulty: "Excel LAF, cột Khó khăn (In lụa): Cao su phải được nhập kho trước 12h mới tiến hành in. Cao su in phải được nhập kho 24h mới giao qua LVF. Nếu sản lượng cần 400-650đ hiện tại đang cân đối làm trong ngày dẫn đến không đạt định mức thời gian. Nếu sản xuất theo đúng năng lực thì dẫn đến cao su in sẽ dư công suất của LVF và gối đầu nhiều ảnh hưởng chất lượng. Thợ phụ không làm ra sản phẩm sau cùng nhưng các công đoạn như vệ sinh, dán định vị đều theo sản lượng thợ in."
       },
       {
         id: 'KZ-03',
@@ -535,7 +539,9 @@ window.TVS_MASTER_DATA = {
         problem: 'Năng lực giờ HC chỉ đạt 450 đôi/ngày/12 khuôn, thấp hơn nhu cầu 650đ/ngày của LVF. Phải ép trước 2 tuần và dễ lệch cơ cấu Size.',
         solution: 'Phân bổ 12 khuôn Ép đế khớp chính xác tỷ lệ Size của 64.837 đôi thật (UK 6: 3 khuôn [28%], UK 5: 3 khuôn [27%], UK 7: 2 khuôn [18%], UK 4: 2 khuôn [14%], UK 8: 1 khuôn [9%], UK 3+9: 1 khuôn [4.6%]) + Lịch lùi 14 ngày.',
         impact: 'Xóa bỏ 100% tình trạng thiếu hụt đế theo Size khi ghép bộ giao LVF.',
-        applied: true
+        applied: true,
+        segmentId: 'EP_DE',
+        excelDifficulty: "Excel LAF, cột Khó khăn (Ép đế): Sản lượng phụ thuộc vào số lượng CCDC và thời gian làm (tăng ca hoặc đi 2 ca). Hiện tại đang triển khai ép đế trước 2 tuần. Nếu cân đối ép để đi theo BTP cao su tấm 650 đôi/ngày thì sẽ gặp khó khăn: (1) nếu màu sắc BTP cao su tấm bị lệch màu (hoặc bất kỳ lỗi nào do vật tư khác) cần đổi kế hoạch sẽ không đáp ứng kịp tiến độ dẫn đến đứt đoạn sản xuất; (2) sản lượng đang full máy và khuôn đã không đáp ứng đủ theo giờ HC, chỉ có thể tăng ca làm thêm giờ và bắt buộc phải triển khai làm trước ít nhất 3 ngày vì còn qua công đoạn mài, kiểm."
       },
       {
         id: 'KZ-04',
@@ -543,7 +549,9 @@ window.TVS_MASTER_DATA = {
         problem: 'Máy 5 trục bị sần cao su và đổi nhiều màu tốn thời gian vệ sinh máy. Máy đùn phải thay đầu ói vệ sinh 2-3 lần/ngày (10-20 phút/lần).',
         solution: 'Sắp xếp trình tự lệnh Cán đùn theo Campaign Màu của đơn hàng TVS (chạy liền mạch LC1783 chiếm 44.8% sản lượng, sau đó LC1786 23.5%, LC1787 16.0%) để giảm 65% số lần đổi màu vệ sinh máy.',
         impact: 'Giảm thời gian dừng máy đùn 45 phút/ngày, luôn nhập kho BTP trước giờ Gò 48h.',
-        applied: true
+        applied: true,
+        segmentId: 'CAN_DUN',
+        excelDifficulty: "Excel LAF, cột Khó khăn (Cán Đùn, 4 ý): (a) Máy cán 2 trục: 1 máy cán vào thuốc ra ép zem phục vụ máy 5 trục full thời gian, 1 máy ra chi tiết cao su ép zem phục vụ máy ói và chạy BTP khác, thời gian hoạt động 4h/ngày. (b) Máy 5 trục: 1 máy hoạt động full thời gian, 1 máy 2-3h/ngày; sản lượng ra thường gặp vấn đề chất lượng do công thức cao su, lỗi vật tư, cao su bị sần, dẫn đến sản phẩm không đạt chất lượng, chạy lại nhiều lần, không đạt định mức. Kế hoạch luôn phải hoàn thành và nhập kho trước ngày gò 48h. Sản xuất nhiều màu dẫn đến thời gian vệ sinh máy nhiều, thay đổi cách làm và điều chỉnh máy, hư hao vật tư, tốn thời gian, không đạt định mức/sản lượng. (c) Máy đùn: sản xuất nhiều chi tiết, thời gian chỉnh máy, thay đổi công cụ dụng cụ dẫn đến không đạt sản lượng, đồng thời mỗi lần chỉnh máy là hao hụt vật tư; trường hợp cao su bị lỗi không ra sản lượng phải thay đầu ói vệ sinh ngày 2-3 lần, mỗi lần 10-20 phút. (d) Máy 3 trục: thời gian hoạt động 3h/ngày."
       },
       {
         id: 'KZ-05',
@@ -551,7 +559,9 @@ window.TVS_MASTER_DATA = {
         problem: 'Máy chặt đạt định mức P. Khai Phát nhưng khâu Kiểm hàng (2 thợ kiểm song song) chỉ đạt 500 đôi/ngày do phải lựa tấm sần.',
         solution: 'Đặt cổng QC soi bề mặt tấm cao su ngay đầu ra Máy 5 trục + Bố trí khay đồng bộ theo Size UK 3..UK 9 và tăng cường 1 NS luân chuyển từ Cán vải sang phụ kiểm.',
         impact: 'Nâng năng suất khâu Kiểm chặt từ 500 đôi lên 645-650 đôi/ngày, đồng bộ 100% bộ chi tiết.',
-        applied: false
+        applied: false,
+        segmentId: 'TO_CHAT',
+        excelDifficulty: "Excel LAF, cột Khó khăn (Tổ Chặt): Các công đoạn chặt so với định mức thời gian của P. Khai Phát đã đạt, tuy nhiên vấn đề khi cao su tấm đầu vào bị lỗi dẫn đến sản lượng chặt đạt sản lượng nhưng chất lượng sản phẩm nhập kho đồng bộ không đạt. Sản lượng người kiểm hàng đang dựa vào số lượng sản phẩm đầu ra của máy. Để đáp ứng kịp tiến độ máy chặt thì phải bố trí 2 thợ kiểm song song, sản lượng ra chỉ đạt được 50% so với định mức."
       },
       {
         id: 'KZ-06',
@@ -559,7 +569,9 @@ window.TVS_MASTER_DATA = {
         problem: 'Luyện kín có ngày thiếu vật tư hóa chất phải dừng lò luyện; Mài đế cần hoàn thành trước 3 ngày so với ngày Gò nhưng Đánh kẽm (1 NS = 450đ/ngày) thấp hơn Mài tay (660đ/ngày).',
         solution: 'Điều động linh hoạt nhân sự giữa Luyện kín, Cán xả và Đánh kẽm/Ủi bia để khóa cứng tiến độ Mài đế hoàn tất trước ngày vào Gò LVF đúng 72 giờ.',
         impact: 'Đảm bảo 100% đơn hàng TVS kịp Ngày xuất Kinh doanh.',
-        applied: false
+        applied: false,
+        segmentId: 'LUYEN_KIN',
+        excelDifficulty: "Excel LAF, cột Khó khăn (Luyện kín + Mài đế): Luyện kín — có những ngày không đủ vật tư thì sẽ không luyện kín và chỉ tập trung cán xả ép zem và ra đế. Mài đế — đang sắp xếp mài theo kế hoạch LVF, sản lượng đáp ứng 500-600đ/ngày; tuy nhiên để đáp ứng theo kế hoạch và chủ động trước vấn đề cần thay đổi thì mài đế hoàn thành trước 3 ngày so với ngày vào gò."
       }
     ],
   before5M: { "Man": 78, "Machine": 74, "Material": 70, "Method": 72, "Measurement": 80 },
