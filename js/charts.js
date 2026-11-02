@@ -24,11 +24,32 @@ window.MESCharts = {
     Object.keys(this.instances).forEach(id => this.destroy(id));
   },
 
+  // Màu chart theo theme (02/11/2026): tick/grid sáng trên nền tối,
+  // tối trên nền sáng. Được gọi mỗi lần vẽ lại chart (kể cả khi user
+  // bấm chuyển theme → MESApp.renderCurrentTab vẽ lại tab hiện tại).
+  theme() {
+    const dark = typeof document !== 'undefined' && document.documentElement && document.documentElement.classList && document.documentElement.classList.contains('dark');
+    return {
+      tick: dark ? '#94a3b8' : '#64748b',
+      grid: dark ? 'rgba(148, 163, 184, 0.25)' : 'rgba(226, 232, 240, 0.6)',
+      gridStrong: dark ? 'rgba(148, 163, 184, 0.35)' : 'rgba(226, 232, 240, 0.8)'
+    };
+  },
+
+  // Đặt màu chữ mặc định của Chart.js (tick, legend) theo theme trước
+  // khi vẽ chart mới. Gọi ở đầu mỗi render* để theme luôn đúng.
+  applyThemeDefaults() {
+    if (typeof Chart !== 'undefined' && Chart.defaults) {
+      Chart.defaults.color = this.theme().tick;
+    }
+  },
+
   /**
    * 1. Combo Bar + Line: Capacity, Actual Output & POH/OEE Trends across 7 Segments
    */
   renderCapacityChart(canvasId, workstations) {
     this.destroy(canvasId);
+    this.applyThemeDefaults();
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -119,21 +140,21 @@ window.MESCharts = {
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' } } },
+          x: { grid: { display: false }, ticks: { font: { size: 12, family: 'Inter' } } },
           yPairs: {
             type: 'linear',
             position: 'left',
-            title: { display: true, text: 'Sản lượng (Đôi/ngày)', font: { size: 10 } },
-            ticks: { font: { size: 10 } },
-            grid: { color: 'rgba(226, 232, 240, 0.6)' }
+            title: { display: true, text: 'Sản lượng (Đôi/ngày)', font: { size: 12 } },
+            ticks: { font: { size: 12 } },
+            grid: { color: this.theme().grid }
           },
           yPercent: {
             type: 'linear',
             position: 'right',
             min: 50,
             max: 110,
-            title: { display: true, text: 'Tỷ lệ %', font: { size: 10 } },
-            ticks: { callback: v => v + '%', font: { size: 10 } },
+            title: { display: true, text: 'Tỷ lệ %', font: { size: 12 } },
+            ticks: { callback: v => v + '%', font: { size: 12 } },
             grid: { display: false }
           }
         }
@@ -147,6 +168,7 @@ window.MESCharts = {
    */
   renderLeadtimeChart(canvasId, orders) {
     this.destroy(canvasId);
+    this.applyThemeDefaults();
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -234,7 +256,7 @@ window.MESCharts = {
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10, family: 'Inter' } } },
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12, family: 'Inter' } } },
           tooltip: {
             callbacks: {
               label(c) {
@@ -246,20 +268,20 @@ window.MESCharts = {
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 9, family: 'Inter' }, maxRotation: 45 }
+            ticks: { font: { size: 11, family: 'Inter' }, maxRotation: 45 }
           },
           yCum: {
             type: 'linear',
             position: 'left',
-            title: { display: true, text: 'Lũy kế (Đôi)', font: { size: 10 } },
-            ticks: { callback: v => (v / 1000).toFixed(0) + 'k', font: { size: 10 } },
-            grid: { color: 'rgba(226, 232, 240, 0.6)' }
+            title: { display: true, text: 'Lũy kế (Đôi)', font: { size: 12 } },
+            ticks: { callback: v => (v / 1000).toFixed(0) + 'k', font: { size: 12 } },
+            grid: { color: this.theme().grid }
           },
           yBar: {
             type: 'linear',
             position: 'right',
-            title: { display: true, text: 'Đôi/Mốc', font: { size: 10 } },
-            ticks: { font: { size: 9 } },
+            title: { display: true, text: 'Đôi/Mốc', font: { size: 12 } },
+            ticks: { font: { size: 11 } },
             grid: { display: false }
           }
         }
@@ -272,6 +294,7 @@ window.MESCharts = {
    */
   renderDonutChart(canvasId, orders, dimension = 'color') {
     this.destroy(canvasId);
+    this.applyThemeDefaults();
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -340,7 +363,7 @@ window.MESCharts = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10, family: 'Inter' } } },
+          legend: { position: 'right', labels: { boxWidth: 10, font: { size: 12, family: 'Inter' } } },
           tooltip: {
             callbacks: {
               label(c) {
@@ -361,6 +384,7 @@ window.MESCharts = {
    */
   renderRadar5M(canvasId, before5M, after5M) {
     this.destroy(canvasId);
+    this.applyThemeDefaults();
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -406,13 +430,13 @@ window.MESCharts = {
           r: {
             min: 50,
             max: 100,
-            ticks: { stepSize: 10, font: { size: 9 }, backdropColor: 'transparent' },
-            pointLabels: { font: { size: 10, weight: '600', family: 'Inter' } },
-            grid: { color: 'rgba(226, 232, 240, 0.8)' }
+            ticks: { stepSize: 10, font: { size: 11 }, backdropColor: 'transparent' },
+            pointLabels: { font: { size: 12, weight: '600', family: 'Inter' } },
+            grid: { color: this.theme().gridStrong }
           }
         },
         plugins: {
-          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10, family: 'Inter' } } }
+          legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 12, family: 'Inter' } } }
         }
       }
     });
@@ -423,6 +447,7 @@ window.MESCharts = {
    */
   renderSizeDistChart(canvasId, ordersRaw, moldAlloc) {
     this.destroy(canvasId);
+    this.applyThemeDefaults();
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -469,7 +494,7 @@ window.MESCharts = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 10, family: 'Inter' } } },
+          legend: { position: 'top', labels: { boxWidth: 12, font: { size: 12, family: 'Inter' } } },
           tooltip: {
             callbacks: {
               label(c) {
@@ -484,20 +509,20 @@ window.MESCharts = {
           }
         },
         scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 10, family: 'Inter' } } },
+          x: { grid: { display: false }, ticks: { font: { size: 12, family: 'Inter' } } },
           yPairs: {
             type: 'linear',
             position: 'left',
-            title: { display: true, text: 'Tổng số đôi', font: { size: 10 } },
-            ticks: { callback: v => (v / 1000).toFixed(0) + 'k', font: { size: 9 } }
+            title: { display: true, text: 'Tổng số đôi', font: { size: 12 } },
+            ticks: { callback: v => (v / 1000).toFixed(0) + 'k', font: { size: 11 } }
           },
           yMolds: {
             type: 'linear',
             position: 'right',
             min: 0,
             max: 5,
-            title: { display: true, text: 'Số khuôn (Bộ)', font: { size: 10 } },
-            ticks: { stepSize: 1, font: { size: 9 } },
+            title: { display: true, text: 'Số khuôn (Bộ)', font: { size: 12 } },
+            ticks: { stepSize: 1, font: { size: 11 } },
             grid: { display: false }
           }
         }
@@ -510,6 +535,7 @@ window.MESCharts = {
    */
   renderWipStackedChart(canvasId, workstations) {
     this.destroy(canvasId);
+    this.applyThemeDefaults();
     const ctx = document.getElementById(canvasId);
     if (!ctx) return;
 
@@ -553,10 +579,10 @@ window.MESCharts = {
         },
         scales: {
           x: {
-            title: { display: true, text: 'Số đôi tồn kho WIP', font: { size: 10 } },
-            ticks: { font: { size: 9 } }
+            title: { display: true, text: 'Số đôi tồn kho WIP', font: { size: 12 } },
+            ticks: { font: { size: 11 } }
           },
-          y: { ticks: { font: { size: 10, family: 'Inter' } } }
+          y: { ticks: { font: { size: 12, family: 'Inter' } } }
         }
       }
     });

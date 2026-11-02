@@ -90,3 +90,66 @@ body {
   }
 }
 
+
+/* ============ TĂNG 2 CỠ CHỮ (02/11/2026) ============ */
+/* Quy tắc: mỗi cỡ chữ tăng đúng 2 nấc Tailwind (xs 12→16, sm 14→18,
+   base 16→20, lg 18→24, xl 20→30, 2xl 24→36, 3xl 30→48). Chỉ đổi cỡ
+   chữ, không đổi padding/margin nên layout không bị phình. Các cỡ
+   chữ nhỏ ghi tay text-[10px]/[11px] (badge, đồng hồ) cũng tăng theo. */
+.text-xs { font-size: 1rem !important; line-height: 1.5rem !important; }
+.text-sm { font-size: 1.125rem !important; line-height: 1.75rem !important; }
+.text-base { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-lg { font-size: 1.5rem !important; line-height: 2rem !important; }
+.text-xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
+.text-2xl { font-size: 2.25rem !important; line-height: 2.5rem !important; }
+.text-3xl { font-size: 3rem !important; line-height: 1.25 !important; }
+.text-\[10px\] { font-size: 0.875rem !important; }
+.text-\[11px\] { font-size: 0.9375rem !important; }
+.toast { font-size: 15px; }
+
+/* ============ THEME TỐI (02/11/2026) ============ */
+/* Cơ chế: class 'dark' trên <html> (xem script ở <head> index.html +
+   MESApp.toggleTheme, lưu mes-theme-v1). Các ghi đè dưới đây có độ
+   đặc hiệu cao hơn utility Tailwind (2 class so với 1) nên thắng mà
+   không cần !important. Header/sidebar vốn đã tối nên giữ nguyên. */
+.dark body { background-color: #0f172a; color: #e2e8f0; }
+.dark .bg-slate-50 { background-color: #0f172a !important; }
+.dark .bg-white { background-color: #1e293b !important; }
+.dark .bg-slate-100 { background-color: #263449 !important; }
+.dark .bg-indigo-50 { background-color: #1e2a4a !important; }
+.dark .bg-amber-50 { background-color: #3a2c12 !important; }
+.dark .bg-rose-50 { background-color: #3a1c24 !important; }
+.dark .bg-emerald-50 { background-color: #12291f !important; }
+.dark .bg-slate-200 { background-color: #334155 !important; }
+.dark .text-slate-900 { color: #f1f5f9 !important; }
+.dark .text-slate-800 { color: #e2e8f0 !important; }
+.dark .text-slate-700 { color: #cbd5e1 !important; }
+.dark .text-slate-600 { color: #94a3b8 !important; }
+.dark .text-slate-500 { color: #7c8aa5 !important; }
+.dark .text-indigo-950 { color: #e0e7ff !important; }
+.dark .text-indigo-900 { color: #c7d2fe !important; }
+.dark .text-indigo-700 { color: #a5b4fc !important; }
+.dark .text-amber-800 { color: #fcd34d !important; }
+.dark .text-amber-700 { color: #fbbf24 !important; }
+.dark .text-rose-700 { color: #fda4af !important; }
+.dark .text-emerald-700 { color: #6ee7b7 !important; }
+.dark .text-emerald-800 { color: #a7f3d0 !important; }
+.dark .border-slate-100 { border-color: #334155 !important; }
+.dark .border-slate-200 { border-color: #334155 !important; }
+.dark .border-slate-300 { border-color: #475569 !important; }
+.dark .border-indigo-200 { border-color: #3730a3 !important; }
+.dark .border-amber-200 { border-color: #92400e !important; }
+.dark .border-rose-200 { border-color: #9f1239 !important; }
+.dark .border-emerald-200 { border-color: #065f46 !important; }
+.dark input, .dark select, .dark textarea {
+  background-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  border-color: #475569 !important;
+}
+.dark input::placeholder, .dark textarea::placeholder { color: #7c8aa5 !important; }
+.dark .hover\:bg-slate-100:hover { background-color: #263449 !important; }
+.dark .hover\:bg-slate-200:hover { background-color: #334155 !important; }
+.dark .hover\:text-slate-700:hover { color: #e2e8f0 !important; }
+.dark .shadow-sm, .dark .shadow-md, .dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+.dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+.dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }

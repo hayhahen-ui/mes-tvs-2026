@@ -34,6 +34,7 @@ window.MESApp = {
 
     this.bindGlobalEvents();
     this.render();
+    this.updateThemeButton();
 
     // Auto-update clock
     this.updateClock();
@@ -326,6 +327,52 @@ window.MESApp = {
     }
   },
 
+  // Sidebar trái (mobile drawer): mở/đóng bằng class translate + backdrop.
+  // Dùng add/remove (không dùng toggle) để tương thích cả DOM stub test.
+  toggleSidebar() {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    if (!sb || !sb.classList) return;
+    if (sb.classList.contains('-translate-x-full')) {
+      sb.classList.remove('-translate-x-full');
+      if (bd && bd.classList) bd.classList.remove('hidden');
+    } else {
+      this.closeSidebar();
+    }
+  },
+
+  closeSidebar() {
+    const sb = document.getElementById('sidebar');
+    const bd = document.getElementById('sidebarBackdrop');
+    if (sb && sb.classList) sb.classList.add('-translate-x-full');
+    if (bd && bd.classList) bd.classList.add('hidden');
+  },
+
+  // Theme tối/sáng: class 'dark' trên <html>, lưu mes-theme-v1, vẽ lại
+  // tab hiện tại để chart đổi màu tick/grid theo theme.
+  isDarkTheme() {
+    if (typeof document !== 'undefined' && document.documentElement && document.documentElement.classList) {
+      return document.documentElement.classList.contains('dark');
+    }
+    try { return localStorage.getItem('mes-theme-v1') === 'dark'; } catch (e) { return false; }
+  },
+
+  updateThemeButton() {
+    const label = document.getElementById('themeToggleLabel');
+    if (label) label.textContent = this.isDarkTheme() ? '☀️ Sáng' : '🌙 Tối';
+  },
+
+  toggleTheme() {
+    const nextDark = !this.isDarkTheme();
+    if (typeof document !== 'undefined' && document.documentElement && document.documentElement.classList) {
+      if (nextDark) document.documentElement.classList.add('dark');
+      else document.documentElement.classList.remove('dark');
+    }
+    try { localStorage.setItem('mes-theme-v1', nextDark ? 'dark' : 'light'); } catch (e) {}
+    this.updateThemeButton();
+    this.renderCurrentTab();
+  },
+
   switchTab(tabId) {
     this.currentTab = tabId;
 
@@ -333,9 +380,13 @@ window.MESApp = {
     document.querySelectorAll('.tab-btn').forEach((btn) => {
       const isTarget = btn.dataset.tab === tabId;
       btn.className = isTarget
-        ? 'tab-btn px-3 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 whitespace-nowrap active-tab bg-amber-500 text-slate-950 shadow-sm'
-        : 'tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap';
+        ? 'tab-btn w-full justify-start text-left px-3 py-2.5 rounded-lg text-xs font-bold transition flex items-center gap-2 active-tab bg-amber-500 text-slate-950 shadow-sm'
+        : 'tab-btn w-full justify-start text-left px-3 py-2.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2';
     });
+    // Mobile: chọn tab xong thì đóng drawer để thấy nội dung.
+    if (typeof window !== 'undefined' && window.innerWidth && window.innerWidth < 768) {
+      this.closeSidebar();
+    }
 
     // Update tab panels
     document.querySelectorAll('.tab-panel').forEach((panel) => {

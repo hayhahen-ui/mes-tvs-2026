@@ -265,6 +265,32 @@ không gọi trực tiếp từ browser, nên MES làm theo cùng cách:
   kết quả cũ vẫn giữ trong khung cho tới khi tải lại trang.
 - Tài nguyên local đổi sang `?v=8`.
 
+## 0i. LAYOUT SIDEBAR TRÁI + TĂNG 2 CỠ CHỮ + THEME TỐI/SÁNG (02/11/2026)
+
+- **Sidebar trái:** toàn bộ thanh tab ngang trong header chuyển thành
+  sidebar cố định góc trái (rộng 256px, 9 tab dọc, nút rộng full và
+  căn trái). Desktop sidebar luôn hiện, main dời sang phải 256px;
+  mobile sidebar thành drawer trượt từ trái, mở bằng nút hamburger
+  (☰) ở đầu header, đóng bằng nút ✕ trong sidebar, bấm backdrop, hoặc
+  tự đóng khi chọn tab. `switchTab` đã sửa class nút sang dạng dọc
+  (trước đây nó ghi đè class ngang nên sidebar sẽ vỡ nếu không sửa).
+  Lưu ý: chuyển toàn bộ 9 tab chứ không tách riêng tab 3-4-5, vì các
+  tab là một hệ thống điều hướng chung — tách 3 tab sang trái còn 6
+  tab ở trên sẽ xẻ đôi navigation, khó dùng.
+- **Tăng 2 cỡ chữ:** mỗi cỡ tăng đúng 2 nấc Tailwind (xs 12→16, sm
+  14→18, base 16→20, lg 18→24, xl 20→30, 2xl 24→36, 3xl 30→48) bằng ghi
+  đè trong `css/style.css` — chỉ đổi cỡ chữ, không đổi padding/margin
+  nên layout không phình. Chữ nhỏ ghi tay text-[10px]/[11px] (badge,
+  đồng hồ) và chữ tick của chart (9→11, 10→12) cũng tăng theo.
+- **Theme tối/sáng:** nút 🌙 Tối / ☀️ Sáng ở toolbar header. Cơ chế:
+  class `dark` trên `<html>` (script ở `<head>` áp trước khi vẽ để
+  không chớp, ưu tiên lựa chọn đã lưu `mes-theme-v1`, chưa có thì theo
+  hệ thống), ghi đè palette trong `style.css` (nền thẻ, chữ, viền,
+  input), header/sidebar vốn đã tối nên giữ nguyên. Chart đổi màu
+  tick/grid theo theme qua `MESCharts.theme()` + `Chart.defaults.color`
+  ở đầu mỗi render, và bấm chuyển theme sẽ vẽ lại tab hiện tại.
+- Tài nguyên local đổi sang `?v=9`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:
