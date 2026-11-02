@@ -56,6 +56,52 @@ Tab cũ “2. Đơn Hàng KD & Kế Hoạch 5M” đã tách thành 2 tab, khôn
 - Các tab sau đánh số lại thành 4–8. Tài nguyên local đổi sang `?v=3` để
   trình duyệt không dùng cache bản tab cũ.
 
+## 0d. XÓA DỮ LIỆU MẪU + NHẬP NHU CẦU + POH + ĐÁNH GIÁ KHẢ THI (02/11/2026)
+
+Theo yêu cầu của user, app mở lên chỉ còn dữ liệu thật, không còn số mẫu:
+
+- **Đã xóa (kể cả state cũ trong localStorage, tự xóa ở lần nạp đầu tiên
+  sau bản này):** sản lượng “hôm nay” của 7 phân đoạn và 32 công đoạn,
+  tồn WIP, POH/OEE mẫu, 3 bàn giao LVF mẫu, 6 kaizen mẫu, nhật ký mẫu,
+  và mọi mặc định 650 đôi/ngày (bộ tính POH, tab Mô Phỏng, banner 5M,
+  KPI Dashboard, cột “Kịch Bản Đang Chạy” trong bảng so sánh — nay điền
+  từ kết quả chạy thật hoặc hiện “—”).
+- **Giữ lại:** 113 PO đơn hàng KD (651 dòng size, 64.837 đôi) + cấu trúc
+  xưởng (7 phân đoạn, 32 công đoạn nhỏ, định biên 71 NS, định mức,
+  thiết bị, 12 khuôn, lịch lùi −5/−6/−7/−8/−19 ngày) + cột “Sau Kaizen”
+  trong bảng so sánh (ghi rõ là audit gốc, chỉ để đối chiếu, không
+  phải kết quả chạy hiện tại). File `js/data.js` vẫn giữ bản gốc để đối
+  chiếu, nhưng state chạy thực tế luôn qua `clearSampleData()` nên app
+  mở lên là sạch mẫu. Nút “Gốc” trên header nay cũng về trạng thái sạch
+  mẫu này, không khôi phục số mẫu cũ.
+- **Nhập nhu cầu rồi mới chạy kế hoạch (bỏ mặc định 650):** ở tab Kế
+  Hoạch, thẻ “Kế hoạch tổng” có ô nhập nhu cầu LVF (đôi/ngày) + nút
+  “Chạy kế hoạch”. Chưa nhập thì `planResult = null` và mọi chỗ hiển thị
+  kế hoạch đều báo “Chưa nhập nhu cầu”, không âm thầm chạy bằng 650.
+  Bộ giải `optimizer.solve()` cũng throw nếu thiếu nhu cầu.
+- **Xoay kế hoạch theo thực tế phát sinh bằng 3 cách:** (1) đổi nhu cầu
+  ở thẻ Kế hoạch tổng rồi “Chạy lại”, (2) đổi tham số ở bộ tính POH rồi
+  “Áp tham số này vào kế hoạch”, (3) đổi tham số ở tab Mô Phỏng rồi
+  “Chạy Thuật Toán Tối Ưu Ngay”. Thêm/sửa đơn ở tab Đơn Hàng KD cũng
+  làm kế hoạch tính lại.
+- **Nhập liệu + tính POH (tab Kế Hoạch, thẻ mới):** POH từng công đoạn
+  = Thực tế / Định mức × 100%; POH nhà máy = Σ Thực tế / Σ Định mức ×
+  100%. Sửa định mức hoặc thực tế rồi bấm “Tính POH & Lưu” — POH hiện
+  luôn ở Dashboard, tab Phân Đoạn và thẻ Khả thi, và được lưu lại.
+  Chưa nhập thực tế thì POH hiện “—”, không dùng số cũ.
+- **Đánh giá khả thi (tab Kế Hoạch, thẻ cuối):** đối chiếu nhu cầu +
+  công suất Ép đế với thực tế đã nhập từng công đoạn, kết luận KHẢ THI /
+  CHƯA KHẢ THI / CHƯA ĐÁNH GIÁ ĐƯỢC, liệt kê công đoạn định mức dưới
+  nhu cầu, công đoạn thực tế dưới nhu cầu và hướng xử lý (ép trước,
+  tăng ca, thêm khuôn, đi 2 ca, dời lịch PO). Lưu ý trung thực: OTD
+  100% trong bộ giải chỉ là hệ quả của lịch lùi từ Ngày xuất KD, thẻ
+  này mới là đánh giá khả thi thật.
+- **Ngoại lệ còn giữ số 650:** các nút ghi nhận nhanh “+650 đôi” / “+1
+  ca” ở tab Phân Đoạn và header là thao tác ghi nhận thủ công theo ca
+  (user bấm tay từng lần, không phải mặc định của kế hoạch), và số
+  liệu audit gốc ở cột “Sau Kaizen” nêu trên. Tài nguyên local đổi sang
+  `?v=4`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

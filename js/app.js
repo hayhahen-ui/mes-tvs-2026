@@ -28,7 +28,7 @@ window.MESApp = {
       this.runOptimization();
       this.render();
       if (event === 'RESET') {
-        this.showToast('Đã khôi phục dữ liệu gốc TVS thành công!', 'success');
+        this.showToast('Đã xóa dữ liệu mẫu, chỉ giữ đơn hàng KD + cấu trúc xưởng!', 'success');
       }
     });
 
@@ -50,11 +50,21 @@ window.MESApp = {
     }
   },
 
+  // Nhu cầu LVF là đầu vào bắt buộc: chưa nhập thì KHÔNG chạy kế hoạch
+  // và không dùng 650 mẫu. Mọi chỗ hiển thị kế hoạch phải chịu được
+  // planResult = null (xem render5mBannerCards / renderMasterPlan).
+  getPlanDemand() {
+    const d = this.state && this.state.simParams ? Number(this.state.simParams.lvfDemand) : NaN;
+    return (d && d > 0) ? d : null;
+  },
+
   runOptimization() {
     if (!this.state || !this.state.ordersGrouped) return;
+    const demand = this.getPlanDemand();
+    if (demand == null) { this.planResult = null; return; }
     this.planResult = MESOptimizer.scheduleAllOrders(
       this.state.ordersGrouped,
-      this.state.simParams || (window.TVS_MASTER_DATA && window.TVS_MASTER_DATA.simParams) || { lvfDemand: 650, molds: 12, canVaiMode: 'batch', epDeMode: 'preload_ot', campaignBatching: true }
+      this.state.simParams
     );
   },
 
@@ -368,13 +378,16 @@ window.MESApp = {
     const container = document.getElementById('valueStreamCards');
     if (!container) return;
 
+    const score = this.planResult?.score5m?.total;
+    const plantPoh = this.calculatePoh().plantPoh;
+    const totalWip = this.getTotalWip();
     const steps = [
       { num: '01', title: '113 PO Kinh Doanh', sub: '64.837 đôi • 5 màu', status: '100% Nạp Đầy Đủ', color: 'emerald' },
-      { num: '02', title: 'Kế Hoạch 1 Tối Ưu 5M', sub: 'Lịch lùi từ Ngày xuất KD', status: 'OTD 100% • 5M: 96.4đ', color: 'emerald' },
-      { num: '03', title: '7 Phân Đoạn LAF', sub: '71 NS • Cán/In/Luyện/Ép/Chặt', status: 'POH 95.2% Chuẩn', color: 'amber' },
-      { num: '04', title: '32 BTP Nhỏ Đồng Bộ', sub: 'Wip: ~43k đôi • Buffer 2-3d', status: 'Kiểm Soát Nhịp Ca', color: 'emerald' },
+      { num: '02', title: 'Kế Hoạch 1 Tối Ưu 5M', sub: 'Lịch lùi từ Ngày xuất KD', status: score != null ? `OTD 100% • 5M: ${score}đ` : 'Chưa chạy — nhập nhu cầu', color: 'emerald' },
+      { num: '03', title: '7 Phân Đoạn LAF', sub: '71 NS • Cán/In/Luyện/Ép/Chặt', status: plantPoh != null ? `POH ${plantPoh}% (từ thực tế)` : 'Chưa nhập thực tế', color: 'amber' },
+      { num: '04', title: '32 BTP Nhỏ Đồng Bộ', sub: `Wip: ${totalWip.toLocaleString('vi-VN')} đôi • Buffer 2-3d`, status: totalWip > 0 ? 'Kiểm Soát Nhịp Ca' : 'Chưa ghi nhận WIP', color: 'emerald' },
       { num: '05', title: '4 Cổng Kỹ Thuật QC', sub: 'Ủ 24h • Lưu 48h • Mài 3d', status: '100% Đạt Chuẩn', color: 'emerald' },
-      { num: '06', title: 'Giao LVF & Xuất Khẩu', sub: '11.832 Thùng CLP • 19 Nước', status: 'Giao Đúng Hạn', color: 'emerald' },
+      { num: '06', title: 'Giao LVF & Xuất Khẩu', sub: '11.832 Thùng CLP • 19 Nước', status: (this.state.handoverLogs || []).length > 0 ? `Đã bàn giao ${(this.state.handoverLogs || []).length} lô` : 'Chưa có bàn giao ghi nhận', color: 'emerald' },
     ];
 
     container.innerHTML = steps.map(s => `
@@ -400,7 +413,8 @@ window.MESApp = {
 
     const totalPairs = this.state.ordersGrouped.reduce((acc, o) => acc + o.total_pairs, 0);
     const totalWip = this.getTotalWip();
-    const score5m = this.planResult?.score5m?.total || 96.4;
+    const score5m = this.planResult?.score5m?.total;
+    const plantPoh = this.calculatePoh().plantPoh;
 
     const kpis = [
       {
@@ -415,10 +429,10 @@ window.MESApp = {
       },
       {
         title: 'HIỆU SUẤT POH LAF TOÀN XƯỞNG',
-        value: '95.2%',
-        sub: 'Định biên 71 NS • Cán 2 ngày/tuần • Ép kéo 2 tuần',
+        value: plantPoh != null ? `${plantPoh}%` : '—',
+        sub: plantPoh != null ? 'Tính từ thực tế ghi nhận (tab Kế Hoạch)' : 'Chưa nhập thực tế — nhập ở tab Kế Hoạch',
         icon: 'activity',
-        trend: '+24.2% so với trước Kaizen (71.0%)',
+        trend: plantPoh != null ? 'POH = Σ thực tế / Σ định mức' : 'Chưa tính được POH',
         trendColor: 'text-emerald-600',
         bgColor: 'bg-emerald-50',
         iconColor: 'text-emerald-500',
@@ -426,7 +440,7 @@ window.MESApp = {
       {
         title: 'TỔNG TỒN KHO WIP (32 BTP NHỎ)',
         value: `${totalWip.toLocaleString('vi-VN')} đôi`,
-        sub: 'Buffer 2.5 - 3.0 ngày sản xuất an toàn',
+        sub: totalWip > 0 ? 'Buffer 2.5 - 3.0 ngày sản xuất an toàn' : 'Chưa có tồn kho ghi nhận',
         icon: 'boxes',
         trend: 'Kiểm soát nhịp dòng chảy',
         trendColor: 'text-indigo-600',
@@ -435,10 +449,10 @@ window.MESApp = {
       },
       {
         title: 'TỶ LỆ ĐÁP ỨNG NGÀY XUẤT KD (OTD)',
-        value: '100.0%',
-        sub: `Điểm 5M: ${score5m}/100 • 30 Mốc xuất 19 Nước`,
+        value: this.planResult ? '100.0%' : '—',
+        sub: score5m != null ? `Điểm 5M: ${score5m}/100 • 30 Mốc xuất 19 Nước` : 'Chưa chạy kế hoạch — nhập nhu cầu',
         icon: 'check-circle',
-        trend: '113/113 PO Đúng Hạn Hoàn Toàn',
+        trend: this.planResult ? '113/113 PO Đúng Hạn (lịch lùi từ ngày xuất)' : 'Chưa có kế hoạch để đánh giá OTD',
         trendColor: 'text-emerald-600',
         bgColor: 'bg-teal-50',
         iconColor: 'text-teal-500',
@@ -595,6 +609,9 @@ window.MESApp = {
     this.render5mBannerCards();
     this.renderPlanningAlgorithm();
     this.updatePohCalculator();
+    this.renderMasterPlan();
+    this.renderPohTable();
+    this.renderFeasibility();
   },
 
   // Alias cũ: giữ để code nào còn gọi tên cũ vẫn chạy (gọi cả 2 tab mới).
@@ -614,7 +631,230 @@ window.MESApp = {
     };
     setText('algoTotalOrders', `${totalOrders} PO`);
     setText('algoTotalPairs', `${totalPairs.toLocaleString('vi-VN')} đôi`);
-    setText('algoTotalDays', `${(totalPairs / 650).toFixed(1)} ngày SX`);
+    const demand = this.getPlanDemand();
+    setText('algoTotalDays', demand != null ? `${(totalPairs / demand).toFixed(1)} ngày SX` : '— (chưa nhập nhu cầu)');
+  },
+
+
+  // POH — công thức duy nhất từ nay, tính từ số liệu user nhập:
+  // POH từng công đoạn = Thực tế (đôi) / Định mức (đôi/ngày) x 100%.
+  // POH nhà máy = Σ Thực tế / Σ Định mức x 100% (công đoạn nào định
+  // mức lớn thì nặng quyền hơn, đúng với tổng công suất). Chưa nhập
+  // thực tế thì POH = null (hiển thị "—"), không dùng số mẫu cũ.
+  calculatePoh() {
+    const segs = (this.state.segments || []).map(seg => {
+      const cap = Number(seg.capacity) || 0;
+      const actual = Number(seg.actual) || 0;
+      const poh = cap > 0 ? Math.round((actual / cap) * 1000) / 10 : null;
+      return { ...seg, capacity: cap, actual, poh };
+    });
+    const totalCap = segs.reduce((a, x) => a + x.capacity, 0);
+    const totalActual = segs.reduce((a, x) => a + x.actual, 0);
+    const totalHeadcount = segs.reduce((a, x) => a + (Number(x.headcount) || 0), 0);
+    const entered = segs.some(x => x.actual > 0);
+    const plantPoh = (entered && totalCap > 0) ? Math.round((totalActual / totalCap) * 1000) / 10 : null;
+    return { segments: segs, totalCap, totalActual, totalHeadcount, entered, plantPoh };
+  },
+
+  // Xoay kế hoạch (1): nhập nhu cầu LVF ở thẻ Kế hoạch tổng rồi chạy.
+  applyPlanDemand() {
+    const input = document.getElementById('planDemandInput');
+    const demand = input ? Number(input.value) : NaN;
+    if (!demand || demand <= 0) {
+      this.showToast('Nhập nhu cầu LVF (đôi/ngày) là số lớn hơn 0 trước khi chạy kế hoạch.', 'error');
+      return;
+    }
+    this.state.simParams = { ...(this.state.simParams || {}), lvfDemand: demand };
+    MESStorage.saveState(this.state);
+    this.runOptimization();
+    this.render();
+    this.showToast(`Đã chạy kế hoạch tổng với nhu cầu ${demand.toLocaleString('vi-VN')} đôi/ngày!`, 'success');
+  },
+
+  // Xoay kế hoạch (2): áp tham số ở bộ tính POH (nhu cầu, khuôn, cán
+  // vải, ép đế) vào kế hoạch chính rồi chạy lại toàn bộ.
+  applyPohCalculatorToPlan() {
+    const demand = Number(document.getElementById('calcLvfDemand')?.value);
+    if (!demand || demand <= 0) {
+      this.showToast('Nhập nhu cầu LVF ở bộ tính POH trước khi áp vào kế hoạch.', 'error');
+      return;
+    }
+    const molds = Number(document.getElementById('calcMoldCount')?.value) || 12;
+    this.state.simParams = {
+      ...(this.state.simParams || {}),
+      lvfDemand: demand,
+      molds,
+      outsoleMolds: molds,
+      canVaiMode: document.getElementById('calcFabricMode')?.value || 'batch',
+      epDeMode: document.getElementById('calcOutsoleMode')?.value || 'preload_ot',
+    };
+    MESStorage.saveState(this.state);
+    this.runOptimization();
+    this.render();
+    this.showToast(`Đã xoay kế hoạch theo tham số mới (nhu cầu ${demand.toLocaleString('vi-VN')} đôi/ngày, ${molds} khuôn)!`, 'success');
+  },
+
+  showMasterPlanGantt() {
+    this.orderViewMode = 'gantt';
+    this.switchTab('orders');
+  },
+
+  // KẾ HOẠCH TỔNG: tóm tắt kế hoạch đã chạy từ đơn hàng KD + nhu cầu.
+  renderMasterPlan() {
+    const el = document.getElementById('masterPlanSummary');
+    if (!el) return;
+    const demand = this.getPlanDemand();
+    const totalOrders = this.state.ordersGrouped.length;
+    const totalPairs = this.state.ordersGrouped.reduce((a, o) => a + o.total_pairs, 0);
+    const totalBoxes = this.state.ordersGrouped.reduce((a, o) => a + o.total_boxes, 0);
+    if (demand == null) {
+      el.innerHTML = `
+        <div class="flex flex-wrap items-center gap-3">
+          <div class="flex-1 min-w-[260px]">
+            <div class="font-bold text-slate-900 text-sm">Chưa có kế hoạch tổng — vì chưa nhập nhu cầu</div>
+            <p class="text-xs text-slate-600 mt-1">Đơn hàng đã có sẵn: <strong>${totalOrders} PO • ${totalPairs.toLocaleString('vi-VN')} đôi • ${totalBoxes.toLocaleString('vi-VN')} thùng CLP</strong>. Nhập nhu cầu LVF (đôi/ngày) theo thực tế đơn hàng rồi bấm “Chạy kế hoạch” — thuật toán sẽ tính số ngày SX, công suất Ép đế, số lần đổi màu và lịch lùi từng PO.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="planDemandInput" min="1" step="10" placeholder="Nhập đôi/ngày" class="w-32 px-3 py-2 text-sm border border-slate-300 rounded-lg font-bold" />
+            <span class="text-xs text-slate-500">đôi/ngày</span>
+            <button onclick="MESApp.applyPlanDemand()" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-lg transition">Chạy kế hoạch</button>
+          </div>
+        </div>`;
+      return;
+    }
+    const sum = this.planResult && this.planResult.summary;
+    if (!sum) {
+      el.innerHTML = '<p class="text-xs text-rose-700">Đã nhập nhu cầu nhưng kế hoạch chưa chạy được — thử bấm “Chạy kế hoạch” lại.</p>';
+      return;
+    }
+    const bottlenecks = (this.state.segments || []).filter(x => (Number(x.capacity) || 0) < demand);
+    el.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div class="font-bold text-slate-900 text-sm">Kế hoạch tổng đang chạy — nhu cầu ${demand.toLocaleString('vi-VN')} đôi/ngày</div>
+          <p class="text-xs text-slate-600 mt-1">${totalOrders} PO • ${totalPairs.toLocaleString('vi-VN')} đôi • ${totalBoxes.toLocaleString('vi-VN')} thùng CLP • Lịch lùi từng PO xem ở tab Đơn Hàng KD (nút Gantt bên dưới).</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="number" id="planDemandInput" min="1" step="10" value="${demand}" class="w-32 px-3 py-2 text-sm border border-slate-300 rounded-lg font-bold" />
+          <button onclick="MESApp.applyPlanDemand()" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-lg transition">Chạy lại với nhu cầu này</button>
+          <button onclick="MESApp.showMasterPlanGantt()" class="text-xs bg-slate-100 hover:bg-slate-200 border border-slate-200 font-semibold px-3 py-2 rounded-lg transition">Xem Gantt từng PO</button>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3 text-xs">
+        <div><div class="text-slate-500">Số ngày SX hết đơn</div><div class="text-lg font-extrabold text-slate-900">${sum.workDays} ngày</div></div>
+        <div><div class="text-slate-500">Công suất Ép đế</div><div class="text-lg font-extrabold text-slate-900">${sum.capEpDay} đôi/ngày</div></div>
+        <div><div class="text-slate-500">Số lần đổi màu</div><div class="text-lg font-extrabold text-slate-900">${sum.colorChanges} lần</div></div>
+        <div><div class="text-slate-500">Điểm 5M</div><div class="text-lg font-extrabold text-slate-900">${sum.score5M} / 100</div></div>
+        <div><div class="text-slate-500">Công đoạn dưới nhu cầu</div><div class="text-lg font-extrabold ${bottlenecks.length ? 'text-rose-600' : 'text-emerald-600'}">${bottlenecks.length ? bottlenecks.map(b => b.segment).join(', ') : 'Không có'}</div></div>
+      </div>
+      <p class="text-[11px] text-slate-500 mt-2">Lưu ý trung thực: OTD 100% của bộ giải là do lịch được lùi từ Ngày xuất KD, chưa phải kết quả đo thực tế. Tính khả thi thật xem ở thẻ “Đánh giá khả thi” cuối trang, dựa vào định mức và sản lượng thực tế đã nhập.</p>`;
+  },
+
+  // NHẬP LIỆU + TÍNH POH: bảng 7 công đoạn, lưu vào state.segments.
+  renderPohTable() {
+    const tableEl = document.getElementById('pohInputTable');
+    const sumEl = document.getElementById('pohPlantSummary');
+    if (!tableEl && !sumEl) return;
+    const poh = this.calculatePoh();
+    if (sumEl) {
+      sumEl.innerHTML = poh.entered
+        ? `<span class="font-bold text-slate-900">POH nhà máy LAF: ${poh.plantPoh}%</span> <span class="text-slate-600">= ${poh.totalActual.toLocaleString('vi-VN')} thực tế / ${poh.totalCap.toLocaleString('vi-VN')} định mức • ${poh.totalHeadcount} NS • Công đoạn POH thấp nhất: ${[...poh.segments].sort((a, b) => (a.poh ?? 999) - (b.poh ?? 999))[0].segment} (${[...poh.segments].sort((a, b) => (a.poh ?? 999) - (b.poh ?? 999))[0].poh}%)</span>`
+        : '<span class="text-slate-600">Chưa nhập thực tế — POH nhà máy chưa tính được. Nhập sản lượng thực tế từng công đoạn ở bảng dưới rồi bấm “Tính POH & Lưu”.</span>';
+    }
+    if (tableEl) {
+      tableEl.innerHTML = `
+        <table class="w-full text-left border-collapse text-xs">
+          <thead><tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
+            <th class="p-2.5">Công đoạn</th><th class="p-2.5 text-center">NS</th>
+            <th class="p-2.5 text-right">Định mức (đôi/ngày)</th><th class="p-2.5 text-right">Thực tế (đôi)</th>
+            <th class="p-2.5 text-right">POH</th><th class="p-2.5">Đánh giá</th>
+          </tr></thead>
+          <tbody>
+            ${poh.segments.map(x => `
+              <tr class="border-b border-slate-100">
+                <td class="p-2.5 font-bold text-slate-900">${x.segment}</td>
+                <td class="p-2.5 text-center">${x.headcount || ''}</td>
+                <td class="p-2.5 text-right"><input type="number" id="pohNorm_${x.id}" value="${x.capacity}" min="0" step="10" class="w-24 px-2 py-1 border border-slate-300 rounded font-bold text-right" /></td>
+                <td class="p-2.5 text-right"><input type="number" id="pohActual_${x.id}" value="${x.actual}" min="0" step="10" class="w-24 px-2 py-1 border border-slate-300 rounded font-bold text-right" /></td>
+                <td class="p-2.5 text-right font-extrabold ${x.poh != null && x.poh >= 100 ? 'text-emerald-700' : 'text-slate-900'}">${x.poh != null ? x.poh + '%' : '—'}</td>
+                <td class="p-2.5 ${x.actual === 0 ? 'text-slate-500' : (x.actual >= x.capacity ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold')}">${x.actual === 0 ? 'Chưa nhập' : (x.actual >= x.capacity ? 'Đạt định mức' : 'Dưới định mức')}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+          <p class="text-[11px] text-slate-500">Công thức: POH = Thực tế / Định mức x 100%. POH trên 100% nghĩa là công đoạn đang làm vượt định mức (tăng ca / vượt năng lực chuẩn).</p>
+          <button onclick="MESApp.savePohInputs()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2 rounded-lg transition">Tính POH & Lưu</button>
+        </div>`;
+    }
+  },
+
+  savePohInputs() {
+    (this.state.segments || []).forEach(seg => {
+      const normEl = document.getElementById('pohNorm_' + seg.id);
+      const actEl = document.getElementById('pohActual_' + seg.id);
+      const norm = normEl ? Number(normEl.value) : NaN;
+      const actual = actEl ? Number(actEl.value) : NaN;
+      if (!isNaN(norm) && norm >= 0) seg.capacity = norm;
+      if (!isNaN(actual) && actual >= 0) seg.actual = actual;
+      seg.poh = (seg.capacity > 0) ? Math.round(((seg.actual || 0) / seg.capacity) * 1000) / 10 : null;
+      const ws = (this.state.workstations || []).find(w => w.id === seg.id);
+      if (ws) { ws.normCapacity = seg.capacity; ws.actualToday = seg.actual; ws.pohPercent = seg.poh; }
+    });
+    MESStorage.saveState(this.state);
+    this.render();
+    const plantPoh = this.calculatePoh().plantPoh;
+    this.showToast(plantPoh != null ? `Đã tính POH: nhà máy ${plantPoh}%` : 'Đã lưu thực tế (chưa có POH vì chưa nhập số lớn hơn 0).', 'success');
+  },
+
+  // ĐÁNH GIÁ KHẢ THI: kế hoạch (nhu cầu + công suất Ép đế) vs thực tế.
+  renderFeasibility() {
+    const el = document.getElementById('feasibilityResult');
+    if (!el) return;
+    const demand = this.getPlanDemand();
+    if (demand == null) {
+      el.innerHTML = '<p class="text-xs text-amber-800">Chưa đánh giá được — nhập nhu cầu LVF ở thẻ “Kế hoạch tổng” trước.</p>';
+      return;
+    }
+    const poh = this.calculatePoh();
+    const sum = this.planResult && this.planResult.summary;
+    const capEpDay = sum ? sum.capEpDay : null;
+    const rows = poh.segments.map(x => {
+      const status = x.actual === 0 ? 'Chưa nhập thực tế'
+        : (x.actual >= demand ? 'Đạt nhu cầu' : `Thiếu ${demand - x.actual} đôi so với nhu cầu`);
+      const cls = x.actual === 0 ? 'text-slate-500'
+        : (x.actual >= demand ? 'text-emerald-700 font-bold' : 'text-rose-600 font-bold');
+      return `<tr class="border-b border-slate-100"><td class="p-2.5 font-bold text-slate-900">${x.segment}</td><td class="p-2.5 text-right">${x.capacity.toLocaleString('vi-VN')}</td><td class="p-2.5 text-right">${x.actual.toLocaleString('vi-VN')}</td><td class="p-2.5 text-right">${x.poh != null ? x.poh + '%' : '—'}</td><td class="p-2.5 ${cls}">${status}</td></tr>`;
+    }).join('');
+    const shortfalls = poh.segments.filter(x => x.actual > 0 && x.actual < demand);
+    const notEntered = poh.segments.filter(x => x.actual === 0);
+    const epOk = capEpDay != null && capEpDay >= demand;
+    let verdict, verdictCls;
+    if (!poh.entered) {
+      verdict = 'CHƯA ĐÁNH GIÁ ĐƯỢC BẰNG THỰC TẾ';
+      verdictCls = 'bg-amber-100 text-amber-900';
+    } else if (shortfalls.length === 0 && notEntered.length === 0 && epOk) {
+      verdict = 'KHẢ THI — mọi công đoạn đều đạt nhu cầu';
+      verdictCls = 'bg-emerald-100 text-emerald-900';
+    } else {
+      verdict = 'CHƯA KHẢ THI — cần điều chỉnh trước khi chốt kế hoạch';
+      verdictCls = 'bg-rose-100 text-rose-900';
+    }
+    const bottlenecks = poh.segments.filter(x => x.capacity < demand);
+    el.innerHTML = `
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <span class="px-3 py-1.5 rounded-full text-xs font-extrabold ${verdictCls}">${verdict}</span>
+        <span class="text-xs text-slate-600">Nhu cầu: ${demand.toLocaleString('vi-VN')} đôi/ngày • Công suất Ép đế: ${capEpDay != null ? capEpDay + ' đôi/ngày' + (epOk ? ' (đủ)' : ' (thiếu ' + (demand - capEpDay) + ' đôi/ngày)') : '—'}</span>
+      </div>
+      <table class="w-full text-left border-collapse text-xs mt-3">
+        <thead><tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider"><th class="p-2.5">Công đoạn</th><th class="p-2.5 text-right">Định mức</th><th class="p-2.5 text-right">Thực tế</th><th class="p-2.5 text-right">POH</th><th class="p-2.5">So với nhu cầu</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <ul class="text-xs text-slate-700 space-y-1 mt-3 list-disc list-inside">
+        ${bottlenecks.length ? `<li>Định mức dưới nhu cầu: ${bottlenecks.map(b => b.segment + ' (' + b.capacity.toLocaleString('vi-VN') + ' &lt; ' + demand.toLocaleString('vi-VN') + ')').join(', ')} — hướng xử lý: ép trước, tăng ca, thêm khuôn hoặc đi 2 ca (thử ở tab Mô Phỏng rồi áp lại vào kế hoạch).</li>` : '<li>Không có công đoạn nào định mức dưới nhu cầu.</li>'}
+        ${notEntered.length ? `<li>Chưa nhập thực tế: ${notEntered.map(x => x.segment).join(', ')} — nhập ở bảng POH để đánh giá đủ 7 công đoạn.</li>` : ''}
+        ${shortfalls.length ? `<li>Thực tế dưới nhu cầu: ${shortfalls.map(x => x.segment + ' (thiếu ' + (demand - x.actual) + ' đôi)').join(', ')} — cần tăng ca / điều động nhân sự / dời lịch PO sang ngày có công suất.</li>` : ''}
+        <li>OTD 100% trong bộ giải chỉ là hệ quả của lịch lùi từ Ngày xuất KD; thẻ này mới là đánh giá khả thi thật, dựa vào định mức và thực tế.</li>
+      </ul>`;
   },
 
   render5mBannerCards() {
@@ -622,13 +862,18 @@ window.MESApp = {
     const totalOrders = this.state.ordersGrouped.length;
     const rubberKg = Math.round(totalPairs * 1.3);
     const fabricSqm = Math.round(totalPairs * 0.75);
-    const totalDaysNeeded = (totalPairs / 650).toFixed(1);
+    const demand = this.getPlanDemand();
+    const plantPoh = this.calculatePoh().plantPoh;
 
     const totalDaysEl = document.getElementById('plan5mTotalDays');
-    if (totalDaysEl) totalDaysEl.textContent = `${totalDaysNeeded} ngày SX chuẩn (650đ/ngày)`;
+    if (totalDaysEl) totalDaysEl.textContent = demand != null
+      ? `${(totalPairs / demand).toFixed(1)} ngày SX chuẩn (${demand.toLocaleString('vi-VN')}đ/ngày)`
+      : '— ngày SX (chưa nhập nhu cầu)';
 
     const otdRateEl = document.getElementById('plan5mOtdRate');
-    if (otdRateEl) otdRateEl.textContent = `100% (${totalOrders}/${totalOrders} PO đúng hạn KD)`;
+    if (otdRateEl) otdRateEl.textContent = this.planResult
+      ? `100% (${totalOrders}/${totalOrders} PO đúng hạn KD)`
+      : 'Chưa chạy — nhập nhu cầu để lập kế hoạch';
 
     const container = document.getElementById('fiveMOptimizationCards');
     if (!container) return;
@@ -637,15 +882,15 @@ window.MESApp = {
       <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700 space-y-1">
         <div class="text-amber-400 font-extrabold uppercase text-[11px] flex items-center justify-between">
           <span>1. MAN (Nhân Sự - 71 NS)</span>
-          <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px]">POH 95.2%</span>
+          <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px]">${plantPoh != null ? 'POH ' + plantPoh + '%' : 'Chưa tính POH'}</span>
         </div>
-        <p class="text-slate-300 leading-relaxed text-[11px]">Cán vải (9 NS) chạy gom lô 2 ngày/tuần; điều động 5 NS dôi dư phụ Kiểm chặt & Đánh kẽm Mài đế để toàn xưởng đạt nhịp <strong>650 đôi/ngày giờ HC</strong>.</p>
+        <p class="text-slate-300 leading-relaxed text-[11px]">Cán vải (9 NS) chạy gom lô 2 ngày/tuần; điều động 5 NS dôi dư phụ Kiểm chặt & Đánh kẽm Mài đế để toàn xưởng đạt nhịp <strong>${demand != null ? demand.toLocaleString('vi-VN') + ' đôi/ngày' : 'nhu cầu đã nhập'} giờ HC</strong>.</p>
       </div>
 
       <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700 space-y-1">
         <div class="text-cyan-400 font-extrabold uppercase text-[11px] flex items-center justify-between">
           <span>2. MACHINE (12 Khuôn & 5 Trục)</span>
-          <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px]">OEE 92.1%</span>
+          <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 text-[10px]">12 khuôn</span>
         </div>
         <p class="text-slate-300 leading-relaxed text-[11px]">Phân bổ 12 khuôn khớp tỷ lệ Size thật: <strong>UK 6 (3 khuôn), UK 5 (3 khuôn), UK 7 (2 khuôn), UK 4 (2 khuôn), UK 8 (1 khuôn), UK 3+9 (1 khuôn)</strong>. Gom chiến dịch 5 mã màu giảm 65% dừng máy.</p>
       </div>
@@ -661,7 +906,7 @@ window.MESApp = {
       <div class="p-3 rounded-xl bg-slate-800/90 border border-slate-700 space-y-1">
         <div class="text-indigo-400 font-extrabold uppercase text-[11px] flex items-center justify-between">
           <span>4. METHOD (Lập Lịch Lùi 5M)</span>
-          <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px]">OTD 100%</span>
+          <span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px]">${this.planResult ? 'OTD 100%' : 'Chưa chạy'}</span>
         </div>
         <p class="text-slate-300 leading-relaxed text-[11px]">Áp dụng Backward Finite Scheduling: Lùi từ Ngày xuất KD: <strong>-5d Gò LVF, -6d In lụa (ủ 24h), -7d Đùn/Chặt (lưu 48h), -8d Mài đế (3d), -19d Ép đế (pull 2 tuần)</strong>.</p>
       </div>
@@ -677,7 +922,16 @@ window.MESApp = {
   },
 
   updatePohCalculator() {
-    const demand = Number(document.getElementById('calcLvfDemand')?.value) || 650;
+    const container0 = document.getElementById('pohCalculationResult');
+    // Đồng bộ ô nhu cầu ở bộ tính với nhu cầu kế hoạch đã lưu (nếu có).
+    const savedDemand = this.getPlanDemand();
+    const calcInput = document.getElementById('calcLvfDemand');
+    if (calcInput && savedDemand != null && !calcInput.value) calcInput.value = savedDemand;
+    const demand = Number(calcInput?.value);
+    if (!demand || demand <= 0) {
+      if (container0) container0.innerHTML = '<p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">Chưa có nhu cầu LVF. Nhập nhu cầu (đôi/ngày) ở ô trên, hoặc nhập ở thẻ “Kế hoạch tổng” rồi bấm “Chạy kế hoạch” — bộ tính POH này sẽ tính theo đúng số đó, không dùng mặc định 650 nữa.</p>';
+      return;
+    }
     const molds = Number(document.getElementById('calcMoldCount')?.value) || 12;
     const fabricMode = document.getElementById('calcFabricMode')?.value || 'batch';
     const outsoleMode = document.getElementById('calcOutsoleMode')?.value || 'preload_ot';
@@ -966,7 +1220,7 @@ window.MESApp = {
               <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${isActive ? 'bg-amber-500 text-slate-950' : 'bg-white text-slate-700 border border-slate-200'}">${w.totalHeadcount} NS</span>
             </div>
             <div class="font-bold text-xs mt-1 truncate">${w.shortName}</div>
-            <div class="text-[11px] mt-1 ${isActive ? 'text-slate-300' : 'text-slate-500'}">${w.subProcesses.length} BTP nhỏ • POH ${w.pohPercent}%</div>
+            <div class="text-[11px] mt-1 ${isActive ? 'text-slate-300' : 'text-slate-500'}">${w.subProcesses.length} BTP nhỏ • POH ${w.pohPercent != null ? w.pohPercent + '%' : '—'}</div>
           </button>
         `;
       }).join('');
@@ -987,12 +1241,12 @@ window.MESApp = {
           </div>
           <div class="flex items-center gap-3">
             <div class="text-right">
-              <div class="text-[10px] text-slate-400 uppercase font-bold">Năng lực chuẩn 8h</div>
-              <div class="text-lg font-extrabold text-slate-900">${activeWs.dailyTargetPairs.toLocaleString('vi-VN')} đôi/ngày</div>
+              <div class="text-[10px] text-slate-400 uppercase font-bold">Nhu cầu LVF đã nhập</div>
+              <div class="text-lg font-extrabold text-slate-900">${activeWs.dailyTargetPairs != null ? activeWs.dailyTargetPairs.toLocaleString('vi-VN') + ' đôi/ngày' : '— (chưa nhập)'}</div>
             </div>
             <div class="p-2.5 rounded-xl bg-slate-100 text-center min-w-[70px]">
               <div class="text-[10px] text-slate-500 uppercase font-bold">POH</div>
-              <div class="text-base font-extrabold text-emerald-600">${activeWs.pohPercent}%</div>
+              <div class="text-base font-extrabold text-emerald-600">${activeWs.pohPercent != null ? activeWs.pohPercent + '%' : '—'}</div>
             </div>
           </div>
         </div>
@@ -1254,9 +1508,9 @@ window.MESApp = {
      ========================================================================= */
   renderLvfHandoverTab() {
     // 1. Calculate Ready Synchronized Sets Count
-    const btpInLua24h = this.state.subProcesses.find(p => p.btp_code === 'BTP-IL-04')?.wip_stock || 1200;
-    const btpDunChat = this.state.subProcesses.find(p => p.btp_code === 'BTP-TC-05')?.wip_stock || 1400;
-    const btpDeMai3d = this.state.subProcesses.find(p => p.btp_code === 'BTP-MD-04')?.wip_stock || 1600;
+    const btpInLua24h = this.state.subProcesses.find(p => p.btp_code === 'BTP-IL-04')?.wip_stock || 0;
+    const btpDunChat = this.state.subProcesses.find(p => p.btp_code === 'BTP-TC-05')?.wip_stock || 0;
+    const btpDeMai3d = this.state.subProcesses.find(p => p.btp_code === 'BTP-MD-04')?.wip_stock || 0;
     const readySyncSets = Math.min(btpInLua24h, btpDunChat, btpDeMai3d);
 
     const countEl = document.getElementById('readySyncSetsCount');
@@ -1264,7 +1518,8 @@ window.MESApp = {
 
     const progressEl = document.getElementById('syncSetsProgressBar');
     if (progressEl) {
-      const pct = Math.min(100, Math.round((readySyncSets / 650) * 100));
+      const demand = this.getPlanDemand();
+      const pct = demand ? Math.min(100, Math.round((readySyncSets / demand) * 100)) : 0;
       progressEl.style.width = `${pct}%`;
     }
 
@@ -1272,6 +1527,10 @@ window.MESApp = {
     const tbody = document.getElementById('handoverTableBody');
     if (!tbody) return;
 
+    if (!this.state.handoverLogs || this.state.handoverLogs.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="8" class="p-4 text-center text-xs text-slate-500">Chưa có bàn giao nào ghi nhận — dữ liệu mẫu cũ đã xóa. Thêm bàn giao mới bằng form ở tab này, số liệu sẽ lưu lại và tính vào WIP / bộ đồng bộ.</td></tr>';
+      return;
+    }
     tbody.innerHTML = this.state.handoverLogs.map((h, idx) => `
       <tr class="border-b border-slate-100 hover:bg-slate-50 transition text-xs">
         <td class="p-3 text-center font-bold text-slate-400">${idx + 1}</td>
@@ -1312,6 +1571,10 @@ window.MESApp = {
     const grid = document.getElementById('kaizenCardsGrid');
     if (!grid) return;
 
+    if (!this.state.kaizenItems || this.state.kaizenItems.length === 0) {
+      grid.innerHTML = '<p class="text-xs text-slate-500 bg-white border border-slate-200 rounded-2xl p-4">Chưa có điểm nghẽn / kaizen nào — dữ liệu mẫu cũ đã xóa. Thêm mới bằng form ở tab này khi phát sinh điểm nghẽn thật trên xưởng.</p>';
+      return;
+    }
     grid.innerHTML = this.state.kaizenItems.map((kz, idx) => `
       <div class="rounded-2xl border ${kz.applied ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200 bg-white'} p-4 flex flex-col justify-between shadow-xs space-y-3">
         <div class="space-y-2.5 text-xs">
@@ -1382,13 +1645,31 @@ window.MESApp = {
     const resEl = document.getElementById('simulationResult');
     if (resEl) {
       const sum = this.planResult && this.planResult.summary;
+      // Cột "Kịch Bản Đang Chạy" trong bảng so sánh phía dưới trước đây
+      // là số mẫu cố định — nay điền từ kết quả chạy thật, hoặc "—".
+      const setCmp = (id, text) => { const c = document.getElementById(id); if (c) c.textContent = text; };
+      const plantPoh = this.calculatePoh().plantPoh;
       if (sum) {
-        const feasible = sum.capEpDay >= (sp.lvfDemand || 650);
+        setCmp('simCmpMan', plantPoh != null ? `POH ${plantPoh}% (từ thực tế đã nhập)` : 'POH chưa tính (chưa nhập thực tế)');
+        setCmp('simCmpMachine', `${sum.params.molds} khuôn • Ép đế ${sum.capEpDay} đôi/ngày • Đổi màu ${sum.colorChanges} lần`);
+        setCmp('simCmpMaterial', `Đồng bộ định mức ${sum.totalPairs.toLocaleString('vi-VN')} đôi: ${sum.rubberKg.toLocaleString('vi-VN')} kg cao su • ${sum.fabricSqm.toLocaleString('vi-VN')} m² vải`);
+        setCmp('simCmpMethod', `Backward Finite Scheduling lùi từ Ngày xuất KD • ${sum.workDays} ngày SX hết đơn`);
+        setCmp('simCmpMeasure', `OTD ${sum.otd}% theo lịch lùi (khả thi thật xem ở tab Kế Hoạch)`);
+      } else {
+        setCmp('simCmpMan', 'Chưa chạy — nhập nhu cầu trước');
+        setCmp('simCmpMachine', 'Chưa chạy — nhập nhu cầu trước');
+        setCmp('simCmpMaterial', 'Chưa chạy — nhập nhu cầu trước');
+        setCmp('simCmpMethod', 'Chưa chạy — nhập nhu cầu trước');
+        setCmp('simCmpMeasure', 'Chưa chạy — nhập nhu cầu trước');
+      }
+      if (sum) {
+        const demand = Number(sp.lvfDemand);
+        const feasible = demand ? sum.capEpDay >= demand : false;
         resEl.innerHTML = `
           <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
             <h3 class="font-bold text-slate-900 text-sm">Kết Quả Kịch Bản Đang Chạy</h3>
             <span class="px-2.5 py-1 rounded-full text-xs font-bold ${feasible ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-              ${feasible ? 'Đủ công suất Ép đế' : 'NGHẼN Ép đế — thiếu ' + Math.max(0, (sp.lvfDemand || 650) - sum.capEpDay) + ' đôi/ngày'}
+              ${feasible ? 'Đủ công suất Ép đế' : 'NGHẼN Ép đế — thiếu ' + Math.max(0, demand - sum.capEpDay) + ' đôi/ngày'}
             </span>
           </div>
           <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3 text-xs">
@@ -1400,16 +1681,21 @@ window.MESApp = {
           </div>
           <p class="text-[11px] text-slate-500 mt-3">Tham số đang chạy: LVF ${sum.params.lvfDemand} đôi/ngày • ${sum.params.molds} khuôn • Cán vải: ${sum.params.canVaiMode} • Ép đế: ${sum.params.epDeMode} • Gom màu: ${sum.params.campaignBatching ? 'Bật' : 'Tắt'} • Cao su ${sum.rubberKg.toLocaleString('vi-VN')} kg • Vải ${sum.fabricSqm.toLocaleString('vi-VN')} m².</p>`;
       } else {
-        resEl.innerHTML = '<p class="text-xs text-slate-500">Bấm “Chạy Thuật Toán Tối Ưu Ngay” để tính kết quả kịch bản — bảng so sánh phía dưới là số liệu mẫu cố định, không phải kết quả của lần chạy.</p>';
+        resEl.innerHTML = '<p class="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">Chưa có kịch bản nào chạy — nhập nhu cầu LVF (đôi/ngày) ở trên rồi bấm “Chạy Thuật Toán Tối Ưu Ngay”. Không còn mặc định 650 nữa.</p>';
       }
     }
 
     const btnRun = document.getElementById('btnRunSimulation');
     if (btnRun) {
       btnRun.onclick = () => {
+        const demand = parseInt(document.getElementById('simLvfDemand').value);
+        if (!demand || demand <= 0) {
+          this.showToast('Nhập nhu cầu LVF (đôi/ngày) trước khi chạy mô phỏng — không dùng mặc định mẫu.', 'error');
+          return;
+        }
         const molds = parseInt(document.getElementById('simMolds').value) || 12;
         const simParams = {
-          lvfDemand: parseInt(document.getElementById('simLvfDemand').value) || 650,
+          lvfDemand: demand,
           molds: molds,
           outsoleMolds: molds,
           canVaiMode: document.getElementById('simCanVaiMode').value,

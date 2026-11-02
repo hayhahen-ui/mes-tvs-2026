@@ -43,7 +43,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/style.css?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=4" />
 </head>
 
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-200">
@@ -444,6 +444,16 @@
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3" id="fiveMOptimizationCards"></div>
       </div>
 
+      <!-- Kế hoạch tổng: nhập nhu cầu rồi chạy (không mặc định 650) -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="clipboard-list" class="w-4 h-4 text-amber-500"></i>
+          Kế hoạch tổng — xoay theo thực tế phát sinh
+        </h3>
+        <div id="masterPlanSummary" class="text-xs"></div>
+        <p class="text-[11px] text-slate-500">Xoay kế hoạch bằng 3 cách: (1) đổi nhu cầu ở thẻ này rồi bấm “Chạy lại”, (2) đổi tham số ở bộ tính POH rồi bấm “Áp tham số này vào kế hoạch”, (3) đổi tham số ở tab Mô Phỏng rồi bấm “Chạy Thuật Toán Tối Ưu Ngay”. Thêm/sửa đơn hàng ở tab Đơn Hàng KD cũng làm kế hoạch tính lại.</p>
+      </div>
+
       <!-- Giải thích thuật toán tối ưu -->
       <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
         <div>
@@ -460,7 +470,7 @@
           </div>
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
             <div class="font-bold text-slate-900">Bước 2 — Tính nhịp chuẩn (takt)</div>
-            <p class="text-slate-600">Xưởng LVF cần <strong>650 đôi/ngày</strong>, nên tổng thời gian chuẩn là <strong id="algoTotalDays">99,7 ngày SX</strong> (tổng đôi ÷ 650). Đây là thước đo để biết một phương án có kịp hay không, trước khi tính lịch chi tiết.</p>
+            <p class="text-slate-600">Nhu cầu LVF do anh nhập (không còn mặc định 650), nên tổng thời gian chuẩn là <strong id="algoTotalDays">—</strong> (tổng đôi ÷ nhu cầu đã nhập). Đây là thước đo để biết một phương án có kịp hay không, trước khi tính lịch chi tiết.</p>
           </div>
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
             <div class="font-bold text-slate-900">Bước 3 — Lập lịch lùi (Backward Scheduling)</div>
@@ -472,7 +482,7 @@
           </div>
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
             <div class="font-bold text-slate-900">Bước 5 — Cân bằng 5M và chốt kỹ thuật</div>
-            <p class="text-slate-600"><strong>MAN:</strong> cán vải gom lô 2 ngày/tuần, điều động nhân sự dôi dư sang kiểm chặt/mài đế. <strong>MACHINE:</strong> 12 khuôn phân bổ theo tỷ lệ size thật, ép trước + tăng ca 3,5 giờ để đủ 650 đôi/ngày. <strong>MATERIAL:</strong> đồng bộ định mức cao su/vải theo PO. <strong>MEASUREMENT:</strong> khóa 4 chốt — ủ in lụa ≥ 24 giờ, lưu đùn ≥ 48 giờ, mài xong trước ≥ 3 ngày, kit đồng bộ 100%.</p>
+            <p class="text-slate-600"><strong>MAN:</strong> cán vải gom lô 2 ngày/tuần, điều động nhân sự dôi dư sang kiểm chặt/mài đế. <strong>MACHINE:</strong> 12 khuôn phân bổ theo tỷ lệ size thật, ép trước + tăng ca 3,5 giờ để đủ nhu cầu đã nhập. <strong>MATERIAL:</strong> đồng bộ định mức cao su/vải theo PO. <strong>MEASUREMENT:</strong> khóa 4 chốt — ủ in lụa ≥ 24 giờ, lưu đùn ≥ 48 giờ, mài xong trước ≥ 3 ngày, kit đồng bộ 100%.</p>
           </div>
           <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
             <div class="font-bold text-slate-900">Bước 6 — Kiểm tra OTD và mô phỏng lại</div>
@@ -498,7 +508,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs">
             <div>
               <label class="block text-slate-600 font-medium mb-1">Sản lượng LVF yêu cầu (đôi/ngày):</label>
-              <input type="number" id="calcLvfDemand" value="650" min="200" max="1500" step="50" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input type="number" id="calcLvfDemand" placeholder="Nhập đôi/ngày" min="1" step="10" class="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500" />
             </div>
             <div>
               <label class="block text-slate-600 font-medium mb-1">Số khuôn Ép Đế hiện có (CCDC):</label>
@@ -508,13 +518,13 @@
               <label class="block text-slate-600 font-medium mb-1">Phương án chạy Chuyền Cán Vải (Man & Material):</label>
               <select id="calcFabricMode" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-slate-800 bg-white">
                 <option value="batch">Gom lô chuẩn: Cán 2 ngày/tuần, In/Chặt 3 ngày/tuần (Tối ưu POH & Vật tư)</option>
-                <option value="daily">Rải đều mỗi ngày 650 đôi (Dư giờ công, hao hụt vật tư)</option>
+                <option value="daily">Rải đều mỗi ngày theo nhu cầu đã nhập (Dư giờ công, hao hụt vật tư)</option>
               </select>
             </div>
             <div class="sm:col-span-2">
               <label class="block text-slate-600 font-medium mb-1">Phương án bù công suất Ép Đế (Machine & Method):</label>
               <select id="calcOutsoleMode" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 font-semibold text-slate-800 bg-white">
-                <option value="preload_ot">Ép trước 2 tuần + Tăng ca 3.5h (Đủ 650đ/ngày)</option>
+                <option value="preload_ot">Ép trước 2 tuần + Tăng ca 3.5h (Đủ nhu cầu đã nhập)</option>
                 <option value="regular_only">Chỉ làm giờ HC 8h (Đạt 450–480đ/ngày - Thiếu hụt)</option>
                 <option value="two_shifts">Đi 2 ca / Tăng lên 17 khuôn (Đạt 680đ/ngày giờ HC)</option>
               </select>
@@ -522,7 +532,28 @@
           </div>
 
           <div id="pohCalculationResult" class="space-y-2.5 text-xs"></div>
+          <button onclick="MESApp.applyPohCalculatorToPlan()" class="w-full text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-lg transition">Áp tham số này vào kế hoạch &amp; chạy lại toàn bộ</button>
         </div>
+
+      <!-- Nhập liệu thực tế & tính POH từng công đoạn + cả nhà máy -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i>
+          Nhập liệu thực tế &amp; tính POH từng công đoạn và cả nhà máy LAF
+        </h3>
+        <p class="text-xs text-slate-600">POH từng công đoạn = Thực tế / Định mức × 100%. POH nhà máy = Σ Thực tế / Σ Định mức × 100%. Sửa định mức hoặc thực tế rồi bấm “Tính POH &amp; Lưu” — số này sẽ hiện luôn ở Dashboard, tab Phân Đoạn và thẻ Khả thi bên dưới, đồng thời lưu vào trình duyệt.</p>
+        <div id="pohPlantSummary" class="text-xs bg-emerald-50 border border-emerald-200 rounded-xl p-3"></div>
+        <div id="pohInputTable" class="overflow-x-auto"></div>
+      </div>
+
+      <!-- Đánh giá tính khả thi: kế hoạch vs thực tế -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
+        <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-indigo-600"></i>
+          Đánh giá tính khả thi kế hoạch — dựa vào số liệu thực tế sản xuất
+        </h3>
+        <div id="feasibilityResult" class="text-xs"></div>
+      </div>
 
     </section>
 
@@ -859,7 +890,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Nhu cầu LVF (đôi/ngày):</label>
-            <input type="number" id="simLvfDemand" value="650" min="200" max="1500" step="50" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900" />
+            <input type="number" id="simLvfDemand" placeholder="Nhập đôi/ngày" min="1" step="10" class="w-full border border-slate-300 rounded-lg px-3 py-2 font-bold text-slate-900" />
           </div>
           <div>
             <label class="block font-semibold text-slate-700 mb-1">Số khuôn Ép Đế hiện có:</label>
@@ -902,7 +933,7 @@
               <tr class="bg-slate-100 text-slate-700 font-bold uppercase tracking-wider">
                 <th class="p-3">Yếu Tố 5M</th>
                 <th class="p-3 text-rose-700">Trước Kaizen (Dữ liệu LAF gốc)</th>
-                <th class="p-3 text-emerald-700">Sau Kaizen 5M (Kế hoạch 1 Tối ưu)</th>
+                <th class="p-3 text-emerald-700">Sau Kaizen 5M (Kế hoạch 1 — audit gốc, để đối chiếu)</th>
                 <th class="p-3 text-indigo-700">Kịch Bản Đang Chạy</th>
               </tr>
             </thead>
@@ -911,31 +942,31 @@
                 <td class="p-3 font-bold text-slate-900">1. Man (Nhân sự & POH)</td>
                 <td class="p-3 text-rose-800">POH 68–72%, Cán vải dư giờ công, Chặt thiếu người</td>
                 <td class="p-3 text-emerald-800 font-semibold">POH đạt 95.2%, Gom lô cán vải, chuyển 5 NS phụ chặt & mài</td>
-                <td class="p-3 text-indigo-800 font-bold">POH 95.8% (Cân bằng dây chuyền chuẩn)</td>
+                <td class="p-3 text-indigo-800 font-bold" id="simCmpMan">—</td>
               </tr>
               <tr class="border-b border-slate-100">
                 <td class="p-3 font-bold text-slate-900">2. Machine (12 Khuôn & Máy cán)</td>
                 <td class="p-3 text-rose-800">Thiếu 200 đôi/ngày khâu Ép đế (450đ vs 650đ cần), 42 lần đổi màu</td>
                 <td class="p-3 text-emerald-800 font-semibold">Ép đế pull trước 2 tuần + tăng ca 3.5h, gom 5 màu chỉ đổi trục 4 lần</td>
-                <td class="p-3 text-indigo-800 font-bold">12 khuôn phân bổ đúng tỷ lệ Size UK 3..9</td>
+                <td class="p-3 text-indigo-800 font-bold" id="simCmpMachine">—</td>
               </tr>
               <tr class="border-b border-slate-100">
                 <td class="p-3 font-bold text-slate-900">3. Material (Cao su & Vải)</td>
                 <td class="p-3 text-rose-800">Hao hụt 18% do cán rải rác và rửa trục 5-roller liên tục</td>
                 <td class="p-3 text-emerald-800 font-semibold">Giảm hao hụt còn &lt;4%, đồng bộ 84.3 tấn cao su và 48.6k m2 vải</td>
-                <td class="p-3 text-indigo-800 font-bold">Đồng bộ 100% định mức vật tư 113 PO</td>
+                <td class="p-3 text-indigo-800 font-bold" id="simCmpMaterial">—</td>
               </tr>
               <tr class="border-b border-slate-100">
                 <td class="p-3 font-bold text-slate-900">4. Method (Phương pháp điều độ)</td>
                 <td class="p-3 text-rose-800">Lập kế hoạch xuôi truyền thống → Nghẽn đế và trễ hạn KD</td>
                 <td class="p-3 text-emerald-800 font-semibold">Backward Finite Scheduling lùi từ Ngày xuất KD (-5d, -6d, -7d, -8d, -19d)</td>
-                <td class="p-3 text-indigo-800 font-bold">100% PO hoàn tất đúng Ngày xuất KD</td>
+                <td class="p-3 text-indigo-800 font-bold" id="simCmpMethod">—</td>
               </tr>
               <tr class="border-b border-slate-100">
                 <td class="p-3 font-bold text-slate-900">5. Measurement (Đo lường & QC)</td>
                 <td class="p-3 text-rose-800">Không có chốt chặn thời gian ủ và lưu kho BTP</td>
                 <td class="p-3 text-emerald-800 font-semibold">Khóa cứng 4 Chốt Kỹ Thuật (Ủ 24h, Lưu kho 48h, Mài trước 3d, Kit đồng bộ)</td>
-                <td class="p-3 text-indigo-800 font-bold">Chất lượng đạt chuẩn xuất khẩu 19 quốc gia</td>
+                <td class="p-3 text-indigo-800 font-bold" id="simCmpMeasure">—</td>
               </tr>
             </tbody>
           </table>
@@ -1224,12 +1255,12 @@
   </footer>
 
   <!-- Application Scripts -->
-  <script src="js/data.js?v=3"></script>
-  <script src="js/storage.js?v=3"></script>
-  <script src="js/optimizer.js?v=3"></script>
-  <script src="js/charts.js?v=3"></script>
-  <script src="js/io.js?v=3"></script>
-  <script src="js/app.js?v=3"></script>
+  <script src="js/data.js?v=4"></script>
+  <script src="js/storage.js?v=4"></script>
+  <script src="js/optimizer.js?v=4"></script>
+  <script src="js/charts.js?v=4"></script>
+  <script src="js/io.js?v=4"></script>
+  <script src="js/app.js?v=4"></script>
   
   <script>
     document.addEventListener('DOMContentLoaded', () => {

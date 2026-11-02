@@ -14,9 +14,11 @@ window.MESOptimizer = {
     ep_de: 19         // Ép đế (-19d, pull trước 2 tuần giải phóng nghẽn)
   },
 
-  // Base capacities
+  // Base capacities — KHÔNG còn nhu cầu LVF mặc định 650.
+  // lvfDemand bắt buộc phải do user nhập (simParams.lvfDemand);
+  // solve() sẽ throw nếu không có, để không bao giờ âm thầm chạy
+  // kế hoạch bằng một con số mẫu.
   CAPACITY: {
-    lvfDemand: 650,   // Đôi/ngày LVF cần
     epDeHc: 450,      // Ép đế 8h HC với 12 khuôn
     epDeMold: 37.5    // Bình quân ~37.5-40 đôi/khuôn/ngày
   },
@@ -171,7 +173,10 @@ window.MESOptimizer = {
   },
 
   solve(orders, params = {}) {
-    const lvf = Number(params.lvfDemand || this.CAPACITY.lvfDemand);
+    const lvf = Number(params.lvfDemand);
+    if (!lvf || lvf <= 0) {
+      throw new Error('Chưa nhập nhu cầu LVF (đôi/ngày) — nhập nhu cầu rồi mới chạy kế hoạch, không dùng mặc định mẫu.');
+    }
     // Simulation tab used to write outsoleMolds; accept both keys.
     const molds = Number(params.molds || params.outsoleMolds || 12);
     const canVaiMode = params.canVaiMode || 'batch';

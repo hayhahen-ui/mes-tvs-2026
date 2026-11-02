@@ -41,13 +41,68 @@ window.MESStorage = {
   state: null,
   listeners: [],
 
+  // XÓA DỮ LIỆU MẪU 02/11/2026 (theo yêu cầu của user: chỉ giữ đơn hàng KD).
+  // Giữ lại: đơn hàng KD (ordersGrouped/ordersRaw), cấu trúc xưởng
+  // (7 phân đoạn, 32 công đoạn nhỏ, định biên, định mức, thiết bị, khuôn,
+  // lịch lùi). Xóa: sản lượng "hôm nay", tồn WIP, POH/OEE mẫu, bàn giao
+  // LVF mẫu, kaizen mẫu, nhật ký mẫu. POH/OEE từ nay chỉ có khi user nhập
+  // sản lượng thực tế ở bảng POH (tab Kế Hoạch) — không còn số mẫu tĩnh.
+  // Nhu cầu LVF cũng không còn mặc định 650: simParams.lvfDemand = null
+  // cho tới khi user nhập. data.js vẫn giữ bản gốc để đối chiếu, nhưng
+  // state chạy thực tế luôn qua hàm này nên app mở lên là sạch mẫu.
+  clearSampleData(state) {
+    if (!state) return state;
+    (state.workstations || []).forEach(w => {
+      w.actualToday = 0;
+      w.pohPercent = null;
+      w.oeePercent = null;
+      w.targetDailyLvf = null;
+      w.dailyTargetPairs = null;
+      (w.subProcesses || []).forEach(sp => {
+        sp.actualToday = 0;
+        sp.currentOutput = 0;
+        sp.wipStock = 0;
+      });
+    });
+    (state.segments || []).forEach(s => {
+      s.actual = 0;
+      s.poh = null;
+      s.oee = null;
+      s.planned = null;
+      s.bottleneck_flag = false;
+      s.bottleneck_issue = 'Chưa nhập nhu cầu — chưa đánh giá nghẽn';
+    });
+    (state.subProcesses || []).forEach(p => {
+      p.actualToday = 0;
+      p.wip_stock = 0;
+    });
+    state.handoverLogs = [];
+    state.kaizenItems = [];
+    state.activityLog = [{
+      ts: new Date().toISOString(),
+      action: 'CLEAR_SAMPLE_DATA',
+      detail: 'Đã xóa dữ liệu mẫu, chỉ giữ đơn hàng KD + cấu trúc xưởng. Nhập nhu cầu LVF và sản lượng thực tế để chạy kế hoạch và tính POH.'
+    }];
+    state.simParams = {
+      lvfDemand: null,
+      molds: 12,
+      canVaiMode: 'batch',
+      epDeMode: 'preload_ot',
+      campaignBatching: true
+    };
+    state.sampleDataCleared = true;
+    return state;
+  },
+
   // Enrich one workstation with the fields tab 3's header/cards read.
+  // Không còn mặc định 650: target chỉ có khi user đã nhập nhu cầu
+  // (simParams.lvfDemand) hoặc workstation đã ghi target thật.
   enrichWorkstation(w) {
     if (!w || typeof w !== 'object') return w;
-    const target = w.targetDailyLvf || 650;
-    const isBottleneck = (w.normCapacity || 0) < target;
+    const target = w.targetDailyLvf != null ? w.targetDailyLvf : null;
+    const isBottleneck = target != null && (w.normCapacity || 0) < target;
     w.description = w.description || w.kaizenNote || '';
-    w.dailyTargetPairs = w.dailyTargetPairs || target;
+    w.dailyTargetPairs = w.dailyTargetPairs != null ? w.dailyTargetPairs : target;
     w.machineEquipment = w.machineEquipment || EQUIPMENT_BY_ID[w.id] || w.shortName || '';
     w.shiftModel = w.shiftModel || ('8h HC' + (w.id === 'EP_DE' ? ' + tăng ca 3.5h' : ''));
     w.standardWorkingHours = w.standardWorkingHours || '8h';
@@ -66,8 +121,8 @@ window.MESStorage = {
   // Flat 7-segment view used by the dashboard table + overview grid.
   buildSegments(workstations) {
     return (workstations || []).map(w => {
-      const target = w.targetDailyLvf || 650;
-      const bottleneck = (w.normCapacity || 0) < target;
+      const target = w.targetDailyLvf != null ? w.targetDailyLvf : null;
+      const bottleneck = target != null && (w.normCapacity || 0) < target;
       return {
         id: w.id,
         code: w.id,
@@ -81,9 +136,11 @@ window.MESStorage = {
         poh: w.pohPercent,
         oee: w.oeePercent,
         bottleneck_flag: bottleneck,
-        bottleneck_issue: bottleneck
-          ? 'Nghẽn: ' + w.normCapacity + ' < ' + target + ' đôi/ngày'
-          : (w.statusLabel || 'Ổn định'),
+        bottleneck_issue: target == null
+          ? 'Chưa nhập nhu cầu — chưa đánh giá nghẽn'
+          : (bottleneck
+            ? 'Nghẽn: ' + w.normCapacity + ' < ' + target + ' đôi/ngày'
+            : (w.statusLabel || 'Ổn định')),
         machine_profile: EQUIPMENT_BY_ID[w.id] || w.shortName || '',
         shift_model: '8h HC' + (w.id === 'EP_DE' ? ' + tăng ca 3.5h' : '')
       };
@@ -168,8 +225,28 @@ window.MESStorage = {
       k.issue = k.issue || k.problem || '';
       k.result = k.result || k.impact || '';
     });
-    if (!state.simParams) state.simParams = { lvfDemand: 650, molds: 12, canVaiMode: 'batch', epDeMode: 'preload_ot', campaignBatching: true };
+    if (!state.simParams) state.simParams = { lvfDemand: null, molds: 12, canVaiMode: 'batch', epDeMode: 'preload_ot', campaignBatching: true };
+    if (state.simParams.lvfDemand === 650 && !state.sampleDataCleared) {
+      // Nhu cầu 650 cũ chỉ là mặc định mẫu, không phải số user nhập.
+      state.simParams.lvfDemand = null;
+    }
     if (state.simParams.outsoleMolds && !state.simParams.molds) state.simParams.molds = state.simParams.outsoleMolds;
+    // Trình duyệt đã mở app bản cũ vẫn còn state mẫu trong localStorage:
+    // lần nạp đầu tiên sau bản này sẽ xóa mẫu ngay tại đây. Giữ lại
+    // nhu cầu/khuôn/phương án mà chính user đã nhập khác 650 (vì 650
+    // không phân biệt được là mặc định mẫu hay user nhập, nên 650 cũ
+    // luôn bị xóa theo yêu cầu bỏ mặc định).
+    if (!state.sampleDataCleared) {
+      const oldParams = state.simParams || {};
+      const keepDemand = (oldParams.lvfDemand != null && oldParams.lvfDemand !== 650)
+        ? oldParams.lvfDemand : null;
+      this.clearSampleData(state);
+      if (keepDemand != null) state.simParams.lvfDemand = keepDemand;
+      if (oldParams.molds != null) state.simParams.molds = oldParams.molds;
+      if (oldParams.canVaiMode) state.simParams.canVaiMode = oldParams.canVaiMode;
+      if (oldParams.epDeMode) state.simParams.epDeMode = oldParams.epDeMode;
+      if (oldParams.campaignBatching != null) state.simParams.campaignBatching = oldParams.campaignBatching;
+    }
     return state;
   },
 
@@ -209,7 +286,10 @@ window.MESStorage = {
         if (!this.state.ordersGrouped || this.state.ordersGrouped.length === 0 || !this.state.workstations) {
           this.resetToDefaults(false);
         } else {
+          const wasCleared = !!this.state.sampleDataCleared;
           this.migrateState(this.state);
+          // Lần đầu xóa mẫu: lưu ngay để trình duyệt không còn số mẫu cũ.
+          if (!wasCleared) this.save();
         }
       } else {
         this.resetToDefaults(false);
@@ -293,7 +373,8 @@ window.MESStorage = {
         });
       });
 
-      const estProdDays = Math.max(0.5, Number((totalPairs / 650).toFixed(1)));
+      // Không còn mặc định 650: số ngày SX chỉ tính được khi đã nhập nhu cầu.
+      const estProdDays = null;
 
       grouped.push({
         idx: idx + 1,
@@ -353,25 +434,23 @@ window.MESStorage = {
       workstations: workstations,
       segments: this.buildSegments(workstations),
       subProcesses: this.buildSubProcesses(workstations),
-      handoverLogs: JSON.parse(JSON.stringify(md.handoverLogs)).map(h => this.normalizeHandover(h)),
-      kaizenItems: JSON.parse(JSON.stringify(md.kaizenItems)).map(k => ({
-        ...k,
-        segment: k.segment || k.section || '',
-        issue: k.issue || k.problem || '',
-        result: k.result || k.impact || ''
-      })),
+      handoverLogs: [],
+      kaizenItems: [],
       before5M: md.before5M,
       after5M: md.after5M,
       moldAlloc: md.moldAlloc,
-      simParams: md.simParams,
-      activityLog: [
-        {
-          ts: new Date().toISOString(),
-          action: 'INIT_SYSTEM',
-          detail: 'Đã nạp 651 dòng size, 113 PO, 7 phân đoạn & 32 công đoạn nhỏ từ TVS master data.'
-        }
-      ]
+      simParams: { lvfDemand: null, molds: 12, canVaiMode: 'batch', epDeMode: 'preload_ot', campaignBatching: true },
+      activityLog: []
     };
+    // Xóa mẫu ngay trên state vừa dựng (giữ nguyên đơn hàng KD ở trên).
+    this.clearSampleData(this.state);
+    this.state.activityLog = [
+      {
+        ts: new Date().toISOString(),
+        action: 'INIT_SYSTEM',
+        detail: 'Đã nạp 113 PO KD (651 dòng size) + cấu trúc 7 phân đoạn & 32 công đoạn. Dữ liệu mẫu đã xóa: nhập nhu cầu LVF và sản lượng thực tế để chạy kế hoạch và tính POH.'
+      }
+    ];
 
     this.save();
     if (notify) {
