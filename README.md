@@ -291,6 +291,36 @@ không gọi trực tiếp từ browser, nên MES làm theo cùng cách:
   ở đầu mỗi render, và bấm chuyển theme sẽ vẽ lại tab hiện tại.
 - Tài nguyên local đổi sang `?v=9`.
 
+## 0j. SỬA TƯƠNG PHẢN THEME TỐI + CỠ CHỮ THEO SKILL TASTE (02/11/2026)
+
+- **Đọc skill:** file `taste-skill-main.zip` user gửi là tasteskill v2
+  (anti-slop frontend). Vì MES là app screen (dashboard làm việc) nên
+  áp `references/app-screens.md` + `colour.md` + `type.md`, không áp
+  run của landing page. Không làm lại toàn bộ thiết kế — chỉ sửa 2
+  điểm user báo (tương phản + cỡ chữ), giữ nguyên nội dung, bố cục
+  và brand LAF.
+- **Gốc lỗi tương phản (đã chẩn đoán từ ảnh chụp):** map theme tối
+  lần 1 chỉ phủ một phần bảng màu nên sinh cặp lệch: hộp kaizen
+  `bg-rose-50 + text-rose-950` (nền đã tối, chữ vẫn tối gần đen),
+  hàng bảng hover `hover:bg-slate-50` chưa map (nền trắng + chữ đã
+  sáng), thẻ công đoạn `bg-slate-50/60` (nền sáng + chữ đã sáng).
+- **Fix:** quét toàn bộ `index.html` + `js/*.js` (135 utility màu
+  khác nhau), viết lại map tối cho MỌI màu: nền tint sáng
+  (50/100/200) → tint tối cùng hue, chữ tối (600-950) → chữ sáng
+  cùng hue, viền sáng → viền tối, hover/focus cũng map đủ. Audit
+  lại: 0 utility thiếu map. Tính thật tỉ lệ tương phản 12 cặp chính:
+  thấp nhất 5.71:1 (chữ phụ trên thẻ), còn lại 6.96–14.23:1 — đều
+  đạt chuẩn 4.5:1 cho chữ thường. Ngoại lệ: `text-slate-950` trên
+  nền vàng (nút, logo LAF) giữ tối vì vàng + chữ trắng chỉ ~2:1.
+  Thêm `color-scheme: dark` để control hệ thống theo theme.
+- **Cỡ chữ (sửa lần 2):** lần +2 nấc trước làm chữ quá lớn, thẻ
+  phình, ít thông tin mỗi màn hình (KPI 48px chạm trần cảnh báo của
+  skill). Lùi về thang chuẩn app screen: xs→14 (median body),
+  sm→16 (median tiêu đề thẻ), base→18, lg→20, xl→24 (median tiêu
+  đề trang), 2xl→28, 3xl→36 (trong trần KPI 40). Chữ tick chart
+  giữ 11/12 (trong khoảng 11-16 của skill).
+- Tài nguyên CSS đổi sang `?v=10`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

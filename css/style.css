@@ -91,65 +91,145 @@ body {
 }
 
 
-/* ============ TĂNG 2 CỠ CHỮ (02/11/2026) ============ */
-/* Quy tắc: mỗi cỡ chữ tăng đúng 2 nấc Tailwind (xs 12→16, sm 14→18,
-   base 16→20, lg 18→24, xl 20→30, 2xl 24→36, 3xl 30→48). Chỉ đổi cỡ
-   chữ, không đổi padding/margin nên layout không bị phình. Các cỡ
-   chữ nhỏ ghi tay text-[10px]/[11px] (badge, đồng hồ) cũng tăng theo. */
-.text-xs { font-size: 1rem !important; line-height: 1.5rem !important; }
-.text-sm { font-size: 1.125rem !important; line-height: 1.75rem !important; }
-.text-base { font-size: 1.25rem !important; line-height: 1.75rem !important; }
-.text-lg { font-size: 1.5rem !important; line-height: 2rem !important; }
-.text-xl { font-size: 1.875rem !important; line-height: 2.25rem !important; }
-.text-2xl { font-size: 2.25rem !important; line-height: 2.5rem !important; }
-.text-3xl { font-size: 3rem !important; line-height: 1.25 !important; }
-.text-\[10px\] { font-size: 0.875rem !important; }
-.text-\[11px\] { font-size: 0.9375rem !important; }
-.toast { font-size: 15px; }
+/* ============ CỠ CHỮ CHO APP SCREEN (02/11/2026, sửa lần 2) ============ */
+/* Bài học từ taste-skill references/app-screens.md §9.1: app screen
+   dùng body 13-16 (median 14), tiêu đề thẻ 14-24 (median 16), KPI
+   16-40 (median 24), KHÔNG có số nào ≥48 (inspector cảnh báo ở 34
+   và 48). Lần tăng +2 nấc trước (xs→16, 3xl→48) làm chữ quá lớn, thẻ
+   phình, ít thông tin mỗi màn hình — nên lùi về thang này: xs→14
+   (đúng median body), sm→16 (đúng median tiêu đề thẻ), base→18,
+   lg→20, xl→24 (đúng median tiêu đề trang), 2xl→28, 3xl→36 (trong
+   trần KPI 40). Chỉ đổi cỡ chữ, không đổi padding/margin. */
+.text-xs { font-size: 0.875rem !important; line-height: 1.25rem !important; }
+.text-sm { font-size: 1rem !important; line-height: 1.5rem !important; }
+.text-base { font-size: 1.125rem !important; line-height: 1.75rem !important; }
+.text-lg { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.text-xl { font-size: 1.5rem !important; line-height: 2rem !important; }
+.text-2xl { font-size: 1.75rem !important; line-height: 2.25rem !important; }
+.text-3xl { font-size: 2.25rem !important; line-height: 2.5rem !important; }
+.text-\[10px\] { font-size: 0.75rem !important; }
+.text-\[11px\] { font-size: 0.75rem !important; }
+.toast { font-size: 14px; }
 
-/* ============ THEME TỐI (02/11/2026) ============ */
-/* Cơ chế: class 'dark' trên <html> (xem script ở <head> index.html +
-   MESApp.toggleTheme, lưu mes-theme-v1). Các ghi đè dưới đây có độ
-   đặc hiệu cao hơn utility Tailwind (2 class so với 1) nên thắng mà
-   không cần !important. Header/sidebar vốn đã tối nên giữ nguyên. */
+/* ============ THEME TỐI — MAP ĐẦY ĐỦ (02/11/2026, sửa lần 2) ============ */
+/* Cơ chế: class 'dark' trên <html> (script <head> + MESApp.toggleTheme,
+   lưu mes-theme-v1). Nguyên tắc từ taste-skill colour.md: chữ chạy
+   4.5:1 trở lên kể cả chữ phụ; chiều sâu trên nền tối bằng bước
+   tông sáng hơn, không dùng glow; color-scheme: dark để control hệ
+   thống theo theme.
+   Bài học lần 1: map thiếu gây cặp lệch (nền đã tối mà chữ vẫn tối,
+   hoặc nền còn sáng mà chữ đã sáng). Vì vậy block này map MỌI màu
+   app đang dùng (đã kiểm kê bằng script quét index.html + js/*.js):
+   - Nền tint sáng (50/100/200) → tint tối cùng hue (cặp với chữ sáng).
+   - Chữ tối (600-950) → chữ sáng cùng hue (cặp với nền tối).
+   - Nền/viền/chữ vốn đã tối hoặc đã sáng thì giữ nguyên.
+   Ngoại lệ cuối block: text-slate-950 trên nền vàng (nút, logo) PHẢI
+   giữ tối, vì vàng + chữ trắng chỉ đạt ~2:1. */
+.dark { color-scheme: dark; }
 .dark body { background-color: #0f172a; color: #e2e8f0; }
-.dark .bg-slate-50 { background-color: #0f172a !important; }
+
+/* --- Nền: bề mặt theo bước tông (ground #0f172a → thẻ #1e293b → nổi #263449) --- */
 .dark .bg-white { background-color: #1e293b !important; }
+.dark .bg-slate-50, .dark .bg-slate-50\/60 { background-color: #1e293b !important; }
 .dark .bg-slate-100 { background-color: #263449 !important; }
-.dark .bg-indigo-50 { background-color: #1e2a4a !important; }
-.dark .bg-amber-50 { background-color: #3a2c12 !important; }
-.dark .bg-rose-50 { background-color: #3a1c24 !important; }
-.dark .bg-emerald-50 { background-color: #12291f !important; }
 .dark .bg-slate-200 { background-color: #334155 !important; }
-.dark .text-slate-900 { color: #f1f5f9 !important; }
-.dark .text-slate-800 { color: #e2e8f0 !important; }
+.dark .bg-slate-300 { background-color: #475569 !important; }
+.dark .bg-amber-50, .dark .bg-amber-50\/50 { background-color: #451a03 !important; }
+.dark .bg-amber-100 { background-color: #78350f !important; }
+.dark .bg-amber-200 { background-color: #92400e !important; }
+.dark .bg-emerald-50, .dark .bg-emerald-50\/30, .dark .bg-emerald-50\/50 { background-color: #022c22 !important; }
+.dark .bg-emerald-100 { background-color: #064e3b !important; }
+.dark .bg-emerald-200 { background-color: #065f46 !important; }
+.dark .bg-indigo-50, .dark .bg-indigo-50\/60 { background-color: #1e1b4b !important; }
+.dark .bg-indigo-100 { background-color: #312e81 !important; }
+.dark .bg-indigo-200 { background-color: #3730a3 !important; }
+.dark .bg-rose-50 { background-color: #4c0519 !important; }
+.dark .bg-rose-100 { background-color: #881337 !important; }
+.dark .bg-rose-200 { background-color: #9f1239 !important; }
+.dark .bg-blue-50 { background-color: #172554 !important; }
+.dark .bg-blue-200 { background-color: #1e40af !important; }
+.dark .bg-purple-50 { background-color: #3b0764 !important; }
+.dark .bg-purple-200 { background-color: #6b21a8 !important; }
+.dark .bg-teal-50 { background-color: #134e4a !important; }
+
+/* --- Chữ: tối → sáng cùng hue (đạt 4.5:1 trên nền tối) --- */
+.dark .text-slate-500 { color: #94a3b8 !important; }
+.dark .text-slate-600 { color: #cbd5e1 !important; }
 .dark .text-slate-700 { color: #cbd5e1 !important; }
-.dark .text-slate-600 { color: #94a3b8 !important; }
-.dark .text-slate-500 { color: #7c8aa5 !important; }
-.dark .text-indigo-950 { color: #e0e7ff !important; }
-.dark .text-indigo-900 { color: #c7d2fe !important; }
-.dark .text-indigo-700 { color: #a5b4fc !important; }
-.dark .text-amber-800 { color: #fcd34d !important; }
-.dark .text-amber-700 { color: #fbbf24 !important; }
-.dark .text-rose-700 { color: #fda4af !important; }
+.dark .text-slate-800 { color: #e2e8f0 !important; }
+.dark .text-slate-900 { color: #f1f5f9 !important; }
+.dark .text-slate-950 { color: #f8fafc !important; }
+.dark .text-amber-600 { color: #fbbf24 !important; }
+.dark .text-amber-700 { color: #fcd34d !important; }
+.dark .text-amber-800 { color: #fde68a !important; }
+.dark .text-amber-900 { color: #fef3c7 !important; }
+.dark .text-amber-950 { color: #fffbeb !important; }
+.dark .text-emerald-600 { color: #34d399 !important; }
 .dark .text-emerald-700 { color: #6ee7b7 !important; }
 .dark .text-emerald-800 { color: #a7f3d0 !important; }
-.dark .border-slate-100 { border-color: #334155 !important; }
-.dark .border-slate-200 { border-color: #334155 !important; }
+.dark .text-emerald-900 { color: #d1fae5 !important; }
+.dark .text-emerald-950 { color: #ecfdf5 !important; }
+.dark .text-indigo-600 { color: #818cf8 !important; }
+.dark .text-indigo-700 { color: #a5b4fc !important; }
+.dark .text-indigo-800 { color: #c7d2fe !important; }
+.dark .text-indigo-900 { color: #e0e7ff !important; }
+.dark .text-indigo-950 { color: #e0e7ff !important; }
+.dark .text-rose-600 { color: #fb7185 !important; }
+.dark .text-rose-700 { color: #fda4af !important; }
+.dark .text-rose-800 { color: #fecdd3 !important; }
+.dark .text-rose-900 { color: #ffe4e6 !important; }
+.dark .text-rose-950 { color: #fff1f2 !important; }
+.dark .text-blue-900 { color: #bfdbfe !important; }
+.dark .text-blue-950 { color: #dbeafe !important; }
+.dark .text-purple-700 { color: #d8b4fe !important; }
+.dark .text-purple-900 { color: #e9d5ff !important; }
+.dark .text-purple-950 { color: #f3e8ff !important; }
+
+/* --- Viền: sáng → tối --- */
+.dark .border-slate-100, .dark .border-slate-200 { border-color: #334155 !important; }
 .dark .border-slate-300 { border-color: #475569 !important; }
-.dark .border-indigo-200 { border-color: #3730a3 !important; }
+.dark .border-slate-700, .dark .border-slate-800, .dark .border-slate-900 { border-color: #475569 !important; }
 .dark .border-amber-200 { border-color: #92400e !important; }
-.dark .border-rose-200 { border-color: #9f1239 !important; }
+.dark .border-amber-300 { border-color: #b45309 !important; }
+.dark .border-amber-400 { border-color: #d97706 !important; }
+.dark .border-amber-500 { border-color: #f59e0b !important; }
 .dark .border-emerald-200 { border-color: #065f46 !important; }
+.dark .border-emerald-300 { border-color: #047857 !important; }
+.dark .border-indigo-100 { border-color: #3730a3 !important; }
+.dark .border-indigo-200 { border-color: #4338ca !important; }
+.dark .border-rose-200 { border-color: #9f1239 !important; }
+.dark .border-rose-300 { border-color: #be123c !important; }
+.dark .border-blue-200 { border-color: #1e40af !important; }
+.dark .border-purple-200 { border-color: #6b21a8 !important; }
+
+/* --- Hover / focus: cùng map như trạng thái thường --- */
+.dark .hover\:bg-slate-50:hover { background-color: #1e293b !important; }
+.dark .hover\:bg-slate-100:hover { background-color: #263449 !important; }
+.dark .hover\:bg-slate-200:hover { background-color: #334155 !important; }
+.dark .hover\:bg-slate-300:hover { background-color: #475569 !important; }
+.dark .hover\:bg-amber-50\/50:hover { background-color: #451a03 !important; }
+.dark .hover\:bg-amber-100:hover { background-color: #78350f !important; }
+.dark .hover\:bg-amber-200:hover { background-color: #92400e !important; }
+.dark .hover\:bg-emerald-100:hover { background-color: #064e3b !important; }
+.dark .hover\:bg-indigo-100:hover { background-color: #312e81 !important; }
+.dark .hover\:bg-rose-100:hover { background-color: #881337 !important; }
+.dark .hover\:text-slate-700:hover { color: #cbd5e1 !important; }
+.dark .hover\:text-slate-900:hover { color: #f1f5f9 !important; }
+.dark .hover\:text-amber-900:hover { color: #fef3c7 !important; }
+.dark .hover\:border-amber-400:hover { border-color: #d97706 !important; }
+.dark .hover\:border-amber-500:hover { border-color: #f59e0b !important; }
+.dark .focus\:bg-white:focus { background-color: #1e293b !important; }
+
+/* --- Input/select/textarea + placeholder + scrollbar --- */
 .dark input, .dark select, .dark textarea {
   background-color: #1e293b !important;
   color: #e2e8f0 !important;
   border-color: #475569 !important;
 }
 .dark input::placeholder, .dark textarea::placeholder { color: #7c8aa5 !important; }
-.dark .hover\:bg-slate-100:hover { background-color: #263449 !important; }
-.dark .hover\:bg-slate-200:hover { background-color: #334155 !important; }
-.dark .hover\:text-slate-700:hover { color: #e2e8f0 !important; }
 .dark .shadow-sm, .dark .shadow-md, .dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
 .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; }
+
+/* --- NGOẠI LỆ: chữ tối trên nền vàng (nút, logo LAF) giữ tối --- */
+.dark .bg-amber-500.text-slate-950, .dark .bg-amber-400.text-slate-950, .dark .from-amber-400.text-slate-950 { color: #0f172a !important; }
