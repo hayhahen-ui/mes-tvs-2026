@@ -224,6 +224,47 @@ không gọi trực tiếp từ browser, nên MES làm theo cùng cách:
   đã lên), không phải trang 404 của Vercel. Sau đó bấm “Kiểm tra kết
   nối” rồi mới “Phân tích bằng AI”. Tài nguyên local đổi sang `?v=7`.
 
+## 0h. FORM NHẬP LIỆU AI + PARSER ĐA TẦNG + EXPERIENTIAL + SO SÁNH MODEL (02/11/2026)
+
+- **Form nhập liệu cho AI (tab 9, thẻ mới):** mục tiêu tối ưu (cân
+  bằng / giảm trễ / tăng POH / giảm đổi màu-hao hụt / tiết kiệm khuôn-
+  tăng ca), nhu cầu LVF cho lần phân tích (ghi đè nhu cầu đã nhập),
+  số khuôn tối đa, POH mục tiêu, cho tăng ca / đi 2 ca, và bối cảnh
+  thực tế trên xưởng (textarea). Form này áp cho cả nút phân tích ở
+  tab 7 và tab 9; để trống thì AI dùng số liệu state như trước. Các
+  điểm cần để tác vụ chạy tốt nhất đã liệt kê đủ trong form: mục tiêu
+  rõ ràng, ràng buộc khuôn/ca, POH mục tiêu, bối cảnh thực tế — thiếu
+  các điểm này thì AI chỉ phân tích chung chung từ state.
+- **Parser đa tầng + gọi lại (bài học Owly 27/10):** `parseAnalysis`
+  nay thử JSON sạch → đoạn {...} cân bằng ngoặc + khử phẩy thừa →
+  đoạn từ '{' đầu tới '}' cuối; nếu lần 1 parse rớt thì gọi lại 1 lần
+  duy nhất với prompt siết “CHỈ JSON trần”; max_tokens 900 → 2000
+  (cả proxy và gọi trực tiếp) để model suy luận dài không bị cắt
+  ngang; proxy lấy thêm `reasoning_content` làm fallback và trả
+  `ok:false` khi model trả về rỗng (trước đây trả về hộp rỗng khó hiểu
+  như ở KZ-01). Khi parse rớt vẫn hiện raw + 300 ký tự đầu để chẩn
+  đoán, kèm nút đánh giá theo luật.
+- **Experiential Labs:** thêm provider (base
+  `https://api.experientiallabs.ai/v1`, chat mặc định `gpt-6-luna`,
+  giá $0.10 vào / $0.50 ra mỗi 1M token theo ảnh console) vào `js/ai.js`
+  và allowlist proxy. Riêng model `gpt-6-luna-decisions` KHÔNG đi
+  đường chat (guard chặn, báo dùng nút Decisions): tab 9 có thẻ
+  “Đánh giá đề xuất bằng Decisions” gọi endpoint `/v1/decisions` với
+  câu hỏi accept/review và bằng chứng (đề xuất AI + kế hoạch + POH),
+  kết quả chỉ để xem, không tự áp dụng. Lưu ý lịch sử 08/10: route
+  chat của model decisions từng 503 unavailable_route trên gateway —
+  đó là lỗi phía provider, nếu endpoint decisions cũng 503 thì app báo
+  đúng như vậy. Decisions cần key Experiential Labs (provider hiện
+  tại phải là Experiential, key provider khác không dùng được).
+- **So sánh model (tab 9):** nhập 2 model cùng provider (cùng key),
+  chạy tuần tự trên cùng điểm nghẽn + cùng form đầu vào, đối chiếu
+  parse OK, thời gian, token vào/ra, chi phí ước tính (bảng giá từ
+  ảnh console River/Experiential; model không có giá thì hiện “—”)
+  và đề xuất số của từng model. App không tự chọn model thay user.
+  Muốn so sánh provider khác: đổi provider, lưu key, chạy tiếp —
+  kết quả cũ vẫn giữ trong khung cho tới khi tải lại trang.
+- Tài nguyên local đổi sang `?v=8`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

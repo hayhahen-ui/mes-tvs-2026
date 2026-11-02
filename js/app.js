@@ -1882,6 +1882,13 @@ window.MESApp = {
     const seg = (this.state.segments || []).find(x => x.id === (kz.segmentId || ''));
     const poh = this.calculatePoh();
     const sum = this.planResult && this.planResult.summary;
+    // Đầu vào do user nhập ở form AI (tab 9) — nếu form trống thì dùng
+    // số liệu state như trước, không bắt buộc nhập.
+    const formVal = (id) => document.getElementById(id)?.value;
+    const formNum = (id) => {
+      const v = Number(formVal(id));
+      return (!isNaN(v) && v > 0) ? v : null;
+    };
     const ctx = {
       kaizen: kz,
       segmentName: seg ? seg.segment : kz.segment,
@@ -1892,7 +1899,14 @@ window.MESApp = {
       planSummary: sum
         ? `${sum.totalOrders} PO, ${sum.totalPairs} đôi, ${sum.workDays} ngày SX, Ép đế ${sum.capEpDay} đôi/ngày, đổi màu ${sum.colorChanges} lần, điểm 5M ${sum.score5M}`
         : 'chưa có kế hoạch (chưa nhập nhu cầu)',
-      plantPoh: poh.plantPoh
+      plantPoh: poh.plantPoh,
+      objective: formVal('aiObjective') || null,
+      context: formVal('aiContext')?.trim() || null,
+      demandOverride: formNum('aiDemandOverride'),
+      maxMolds: formNum('aiMaxMolds'),
+      targetPoh: formNum('aiTargetPoh'),
+      allowOvertime: document.getElementById('aiAllowOvertime') ? !!document.getElementById('aiAllowOvertime').checked : null,
+      allowTwoShifts: document.getElementById('aiAllowTwoShifts') ? !!document.getElementById('aiAllowTwoShifts').checked : null
     };
     const res = await window.MESAI.analyzeBottleneck(ctx);
     if (!res.ok) {
@@ -1902,6 +1916,16 @@ window.MESApp = {
     }
     if (!this.aiSuggestions) this.aiSuggestions = {};
     this.aiSuggestions[idx] = res.parsed;
+    if (!this.aiAnalyses) this.aiAnalyses = {};
+    this.aiAnalyses[idx] = res;
+    const usageLine = (r) => {
+      if (!r.usage) return '';
+      const u = r.usage;
+      const inp = u.prompt_tokens != null ? u.prompt_tokens : (u.input_tokens != null ? u.input_tokens : null);
+      const out = u.completion_tokens != null ? u.completion_tokens : (u.output_tokens != null ? u.output_tokens : null);
+      const cost = (window.MESAI && r.model) ? window.MESAI.estimateCost(r.model, { prompt_tokens: inp, completion_tokens: out }) : null;
+      return `<p class="text-slate-500">Model: ${r.model || '—'}${r.retried ? ' (đã gọi lại 1 lần vì lần đầu parse rớt)' : ''} • Token: vào ${inp != null ? inp : '—'} / ra ${out != null ? out : '—'}${cost != null ? ` • Chi phí ước tính: $${cost.toFixed(4)}` : ''}</p>`;
+    };
     if (el) {
       if (res.parsed) {
         const sug = res.parsed;
@@ -1914,13 +1938,17 @@ window.MESApp = {
             <p><strong>Tác động ước tính:</strong> ${sug.estimatedImpact ? JSON.stringify(sug.estimatedImpact) : '—'}</p>
             <p><strong>Giải thích:</strong> ${sug.explanation || '—'}</p>
             <p><strong>Đề xuất áp vào kế hoạch:</strong> ${sug.suggestedNorm != null ? `định mức mới ${sug.suggestedNorm} đôi/ngày; ` : ''}${sug.suggestedMolds != null ? `${sug.suggestedMolds} khuôn; ` : ''}${sug.suggestedEpDeMode ? `ép đế ${sug.suggestedEpDeMode}; ` : ''}${sug.suggestedCanVaiMode ? `cán vải ${sug.suggestedCanVaiMode}; ` : ''}${(sug.suggestedNorm == null && sug.suggestedMolds == null && !sug.suggestedEpDeMode && !sug.suggestedCanVaiMode) ? 'không có đề xuất số cụ thể' : ''}</p>
+            ${usageLine(res)}
             <button onclick="MESApp.applyAiSuggestion(${idx})" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-indigo-600 hover:bg-indigo-500 text-white transition">Điền đề xuất AI vào form (chưa áp — bấm Lưu để áp)</button>
+            <button onclick="MESApp.decideCurrentProposal(${idx})" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 transition">Đánh giá đề xuất bằng Decisions (chỉ để xem)</button>
           </div>`;
       } else {
+        const raw = String(res.raw || '');
         el.innerHTML = `
           <div class="p-3 rounded-xl bg-indigo-50 border border-indigo-200 space-y-2">
             <div class="font-bold text-indigo-950">Phân tích AI — ${kz.id} (AI trả về văn bản, không parse được JSON nên không tự điền form)</div>
-            <p class="whitespace-pre-wrap leading-relaxed">${String(res.raw || '').slice(0, 2000)}</p>
+            ${raw ? `<p class="whitespace-pre-wrap leading-relaxed">${raw.slice(0, 2000)}</p><p class="text-slate-500">300 ký tự đầu để chẩn đoán: ${raw.slice(0, 300)}</p>` : '<p class="text-rose-700 font-bold">AI trả về rỗng — thử bấm “Phân tích bằng AI” lại một lần hoặc đổi model (model suy luận dài có thể cần token budget lớn hơn).</p>'}
+            ${usageLine(res)}
             <p class="text-slate-500">Hãy đọc kỹ và tự điền định mức / tham số vào form rồi bấm Lưu.</p>
           </div>`;
       }
@@ -1938,6 +1966,121 @@ window.MESApp = {
     setVal(`kzCanVaiMode_${idx}`, sug.suggestedCanVaiMode);
     setVal(`kzStatus_${idx}`, 'resolved');
     this.showToast('Đã điền đề xuất AI vào form — kiểm tra lại rồi bấm “Lưu trạng thái & xoay lại kế hoạch” để áp dụng.', 'info');
+  },
+
+  // Đánh giá đề xuất bằng Decisions (Experiential): lấy phân tích AI
+  // gần nhất của điểm nghẽn + kế hoạch/POH hiện tại làm bằng chứng,
+  // hỏi accept/review. Kết quả CHỈ ĐỂ XEM — không tự áp dụng.
+  async decideCurrentProposal(idx) {
+    const kz = this.state.kaizenItems[idx];
+    const el = document.getElementById('decideResult');
+    if (!kz) {
+      if (el) el.innerHTML = '<p class="text-rose-700">Chọn điểm nghẽn ở khung “Phân tích 1 điểm nghẽn bằng AI” trước.</p>';
+      return;
+    }
+    const sug = (this.aiSuggestions && this.aiSuggestions[idx]) || null;
+    const sum = this.planResult && this.planResult.summary;
+    const poh = this.calculatePoh();
+    const input = `Đề xuất thay đổi kế hoạch cho điểm nghẽn ${kz.id} (${kz.segment}): ${kz.issue}. ` +
+      `Giải pháp Kế hoạch 1: ${kz.solution}. ` +
+      (sug ? `Đề xuất AI: nguyên nhân ${sug.rootCause || ''}; biện pháp ${(sug.actions || []).join('; ')}; định mức mới ${sug.suggestedNorm != null ? sug.suggestedNorm : 'không đổi'}; khuôn ${sug.suggestedMolds != null ? sug.suggestedMolds : 'không đổi'}; ép đế ${sug.suggestedEpDeMode || 'không đổi'}; cán vải ${sug.suggestedCanVaiMode || 'không đổi'}. ` : 'Chưa có phân tích AI cho điểm này — đánh giá dựa trên giải pháp Kế hoạch 1. ') +
+      `Kế hoạch hiện tại: ${sum ? `${sum.workDays} ngày SX, Ép đế ${sum.capEpDay} đôi/ngày, điểm 5M ${sum.score5M}` : 'chưa có kế hoạch'}. POH nhà máy: ${poh.plantPoh != null ? poh.plantPoh + '%' : 'chưa tính'}. Nhu cầu LVF: ${this.getPlanDemand() != null ? this.getPlanDemand() + ' đôi/ngày' : 'chưa nhập'}.`;
+    if (el) el.innerHTML = '<p class="text-slate-500">Đang gọi Decisions đánh giá...</p>';
+    const res = await window.MESAI.decideProposal(input);
+    if (!res.ok) {
+      if (el) el.innerHTML = `<p class="text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">${res.error}</p>`;
+      return;
+    }
+    const ans = (res.answers || []).find(a => a.name === 'review') || (res.answers || [])[0];
+    const ansText = ans ? (ans.value || ans.answer || JSON.stringify(ans)) : '—';
+    if (el) {
+      el.innerHTML = `
+        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-2">
+          <div class="font-bold text-amber-950">Đánh giá Decisions — ${kz.id}: ${ansText}</div>
+          <p class="whitespace-pre-wrap leading-relaxed">${JSON.stringify(res.answers || [], null, 2)}</p>
+          ${res.usage ? `<p class="text-slate-500">Token: ${JSON.stringify(res.usage)}</p>` : ''}
+          <p class="text-slate-500 font-bold">Kết quả này chỉ để xem — không tự áp dụng. Muốn áp dụng thì điền đề xuất vào form theo dõi ở tab Điểm Nghẽn rồi bấm Lưu.</p>
+        </div>`;
+    }
+  },
+
+  // So sánh 2 model cùng provider (cùng key) trên cùng 1 điểm nghẽn:
+  // chạy tuần tự, đo thời gian, token, chi phí ước tính, parse OK hay
+  // không, và đề xuất số của từng model. Muốn so sánh provider khác
+  // thì đổi provider, lưu key, chạy tiếp — kết quả cũ vẫn giữ trong
+  // khung này cho tới khi tải lại trang.
+  async compareModels() {
+    const sel = document.getElementById('reopKaizenSelect');
+    const idx = sel ? Number(sel.value) : NaN;
+    const kz = this.state.kaizenItems[idx];
+    const outEl = document.getElementById('cmpResult');
+    if (!kz) { if (outEl) outEl.innerHTML = '<p class="text-rose-700">Chọn điểm nghẽn ở khung “Phân tích 1 điểm nghẽn bằng AI” trước.</p>'; return; }
+    if (window.MESAI && !window.MESAI.getKey()) {
+      if (outEl) outEl.innerHTML = '<p class="text-rose-700">Chưa có key AI — nhập key ở khung kết nối phía trên trước.</p>';
+      return;
+    }
+    const modelA = document.getElementById('cmpModelA')?.value?.trim();
+    const modelB = document.getElementById('cmpModelB')?.value?.trim();
+    if (!modelA || !modelB) {
+      if (outEl) outEl.innerHTML = '<p class="text-rose-700">Nhập đủ 2 model để so sánh.</p>';
+      return;
+    }
+    const btn = document.getElementById('cmpRunBtn');
+    if (btn) btn.disabled = true;
+    if (outEl) outEl.innerHTML = '<p class="text-slate-500">Đang chạy so sánh (2 lần gọi AI tuần tự, có thể mất 10–30 giây)...</p>';
+    // Dùng cùng ctx như analyzeKaizen (kể cả form đầu vào tab 9).
+    const seg = (this.state.segments || []).find(x => x.id === (kz.segmentId || ''));
+    const poh = this.calculatePoh();
+    const sum = this.planResult && this.planResult.summary;
+    const formVal = (id) => document.getElementById(id)?.value;
+    const formNum = (id) => { const v = Number(formVal(id)); return (!isNaN(v) && v > 0) ? v : null; };
+    const ctx = {
+      kaizen: kz,
+      segmentName: seg ? seg.segment : kz.segment,
+      segmentCapacity: seg ? seg.capacity : null,
+      segmentActual: seg ? seg.actual : null,
+      segmentPoh: seg ? seg.poh : null,
+      demand: this.getPlanDemand(),
+      planSummary: sum ? `${sum.totalOrders} PO, ${sum.totalPairs} đôi, ${sum.workDays} ngày SX, Ép đế ${sum.capEpDay} đôi/ngày, đổi màu ${sum.colorChanges} lần, điểm 5M ${sum.score5M}` : 'chưa có kế hoạch (chưa nhập nhu cầu)',
+      plantPoh: poh.plantPoh,
+      objective: formVal('aiObjective') || null,
+      context: formVal('aiContext')?.trim() || null,
+      demandOverride: formNum('aiDemandOverride'),
+      maxMolds: formNum('aiMaxMolds'),
+      targetPoh: formNum('aiTargetPoh'),
+      allowOvertime: document.getElementById('aiAllowOvertime') ? !!document.getElementById('aiAllowOvertime').checked : null,
+      allowTwoShifts: document.getElementById('aiAllowTwoShifts') ? !!document.getElementById('aiAllowTwoShifts').checked : null
+    };
+    const runOne = async (model) => {
+      const t0 = Date.now();
+      const r = await window.MESAI.analyzeBottleneck(ctx, { model });
+      const ms = Date.now() - t0;
+      const u = r.usage || {};
+      const inp = u.prompt_tokens != null ? u.prompt_tokens : (u.input_tokens != null ? u.input_tokens : null);
+      const out = u.completion_tokens != null ? u.completion_tokens : (u.output_tokens != null ? u.output_tokens : null);
+      const cost = window.MESAI.estimateCost(model, { prompt_tokens: inp, completion_tokens: out });
+      return { model, ms, ok: r.ok, parsed: r.parsed || null, error: r.error || null, inp, out, cost };
+    };
+    const a = await runOne(modelA);
+    const b = await runOne(modelB);
+    if (btn) btn.disabled = false;
+    const row = (r) => `
+      <tr class="border-t border-slate-100">
+        <td class="py-1 font-mono font-bold">${r.model}</td>
+        <td class="py-1">${r.ok ? (r.parsed ? 'Parse OK' : 'Trả về nhưng parse rớt') : 'Lỗi: ' + (r.error || '')}</td>
+        <td class="py-1 text-right">${r.ms} ms</td>
+        <td class="py-1 text-right">${r.inp != null ? r.inp : '—'} / ${r.out != null ? r.out : '—'}</td>
+        <td class="py-1 text-right font-bold">${r.cost != null ? '$' + r.cost.toFixed(4) : '—'}</td>
+      </tr>
+      ${r.parsed ? `<tr class="border-t border-slate-100 bg-slate-50"><td class="py-1 pl-4" colspan="5">Nguyên nhân: ${r.parsed.rootCause || '—'} • Đề xuất: định mức ${r.parsed.suggestedNorm != null ? r.parsed.suggestedNorm : '—'}, khuôn ${r.parsed.suggestedMolds != null ? r.parsed.suggestedMolds : '—'}, ép đế ${r.parsed.suggestedEpDeMode || '—'}, cán vải ${r.parsed.suggestedCanVaiMode || '—'}</td></tr>` : ''}`;
+    if (outEl) {
+      outEl.innerHTML = `
+        <table class="w-full text-left border-collapse">
+          <thead><tr class="text-slate-500 font-bold"><th class="py-1">Model</th><th class="py-1">Kết quả</th><th class="py-1 text-right">Thời gian</th><th class="py-1 text-right">Token vào/ra</th><th class="py-1 text-right">Chi phí ước tính</th></tr></thead>
+          <tbody>${row(a)}${row(b)}</tbody>
+        </table>
+        <p class="text-slate-500 mt-1">Kết luận gợi ý: ưu tiên model Parse OK và có đề xuất số cụ thể; nếu cả 2 đều Parse OK thì so đề xuất số và chi phí ở trên, rồi tự chọn — app không tự chọn model thay anh. Muốn so sánh provider khác: đổi provider, lưu key, chạy tiếp, kết quả cũ vẫn ở đây cho tới khi tải lại trang.</p>`;
+    }
   },
 
   // Nút cũ: giữ để code khác gọi không vỡ; nay chỉ đổi trạng thái,
@@ -2024,6 +2167,22 @@ window.MESApp = {
         ? '<p class="text-emerald-700 font-bold">Tất cả điểm nghẽn đã tháo gỡ.</p>'
         : `<p>${open.length} điểm chưa tháo gỡ: ${open.map(k => k.id + ' (' + k.segment + ')').join(', ')}. Điểm mới phát sinh thì nhập ở tab Điểm Nghẽn & Kaizen (nút “Thêm Đề Xuất Kaizen 5M”), đánh giá tác động ngay tại thẻ của nó, rồi quay lại đây chạy lại kế hoạch.</p>
            <button onclick="MESApp.switchTab('kaizen_center')" class="mt-2 px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-900 text-white hover:bg-slate-800 transition">Sang tab Điểm Nghẽn & Kaizen</button>`;
+    }
+    // Compare inputs: prefill from current provider models (only if empty,
+    // so user edits are not overwritten on every tab switch).
+    if (window.MESAI) {
+      const prov = window.MESAI.getProvider();
+      const models = (prov && window.MESAI.PROVIDERS[prov] && window.MESAI.PROVIDERS[prov].models)
+        || (prov ? [window.MESAI.PROVIDERS[prov].defaultModel] : []);
+      const cmpA = document.getElementById('cmpModelA');
+      const cmpB = document.getElementById('cmpModelB');
+      const hint = document.getElementById('cmpHint');
+      if (hint) hint.textContent = prov
+        ? `Đang dùng key provider ${window.MESAI.PROVIDERS[prov].label} — so sánh chỉ chạy các model của provider này (cùng key).`
+        : 'Chưa có key — nhập key ở khung kết nối phía trên trước.';
+      if (cmpA && !cmpA.value && models[0]) cmpA.value = models[0];
+      if (cmpB && !cmpB.value && models[1]) cmpB.value = models[1];
+      else if (cmpB && !cmpB.value && models[0]) cmpB.value = models[0];
     }
     // Select for AI analysis
     const sel = document.getElementById('reopKaizenSelect');

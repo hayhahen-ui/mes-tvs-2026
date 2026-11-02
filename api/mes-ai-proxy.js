@@ -18,7 +18,8 @@
  * - Lỗi trả về chỉ có status chung, không kèm nội dung lỗi chứa key.
  *
  * API: POST /api/mes-ai-proxy
- *   Body: { provider, model, action: 'test' | 'chat', system?, prompt? }
+ *   Body: { provider, model, action: 'test' | 'chat' | 'decide',
+ *           system?, prompt?, maxTokens?, input?, questions? }
  *   Header: Authorization: Bearer <key>
  *   Trả về: { ok: true, text? } hoặc { ok: false, error, status? }
  */
@@ -31,6 +32,7 @@ const PROVIDERS = {
   deepseek: { base: 'https://api.deepseek.com/v1', dialect: 'openai' },
   river: { base: 'https://api.river.ai/v1', dialect: 'openai' },
   anthropic: { base: 'https://api.anthropic.com/v1', dialect: 'anthropic' },
+  experiential: { base: 'https://api.experientiallabs.ai/v1', dialect: 'openai' },
   gemini: { base: 'https://generativelanguage.googleapis.com/v1beta', dialect: 'gemini' }
 };
 
@@ -97,10 +99,36 @@ module.exports = async (req, res) => {
       return res.status(200).json({ ok: r.ok, status: r.status });
     }
 
+    // ---- Decisions (chỉ Experiential Labs, model gpt-6-luna-decisions) ----
+    if (body.action === 'decide') {
+      if (body.provider !== 'experiential') {
+        return res.status(400).json({ ok: false, error: 'Decisions chỉ dùng với Experiential Labs' });
+      }
+      const input = String(body.input || '');
+      if (!input) {
+        return res.status(400).json({ ok: false, error: 'Thiếu input cho Decisions' });
+      }
+      const r = await fetchWithTimeout(prov.base + '/decisions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
+        body: JSON.stringify({
+          model: 'gpt-6-luna-decisions',
+          input,
+          questions: body.questions || []
+        })
+      }, 60000);
+      if (!r.ok) {
+        return res.status(200).json({ ok: false, error: 'HTTP ' + r.status, status: r.status });
+      }
+      const data = await r.json();
+      return res.status(200).json({ ok: true, answers: data.answers || [], usage: data.usage || null, raw: data });
+    }
+
     // ---- Chat ----
     if (body.action !== 'chat') {
       return res.status(400).json({ ok: false, error: 'action không hợp lệ' });
     }
+    const maxTokens = Math.min(8000, Math.max(100, Number(body.maxTokens) || 2000));
     const prompt = String(body.prompt || '');
     const system = String(body.system || '');
     if (!prompt) {
@@ -116,7 +144,7 @@ module.exports = async (req, res) => {
       headers['anthropic-version'] = '2023-06-01';
       payload = {
         model,
-        max_tokens: 900,
+        max_tokens: maxTokens,
         temperature: 0.2,
         messages: [{ role: 'user', content: prompt }]
       };
@@ -126,7 +154,7 @@ module.exports = async (req, res) => {
       const text = system ? system + '\n\n' + prompt : prompt;
       payload = {
         contents: [{ parts: [{ text }] }],
-        generationConfig: { temperature: 0.2, maxOutputTokens: 900 }
+        generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens }
       };
     } else {
       url = prov.base + '/chat/completions';
@@ -134,7 +162,7 @@ module.exports = async (req, res) => {
       payload = {
         model,
         temperature: 0.2,
-        max_tokens: 900,
+        max_tokens: maxTokens,
         messages: [
           ...(system ? [{ role: 'system', content: system }] : []),
           { role: 'user', content: prompt }
@@ -152,14 +180,24 @@ module.exports = async (req, res) => {
     }
     const data = await r.json();
     let text = '';
+    let usage = null;
     if (prov.dialect === 'anthropic') {
       text = (data.content || []).map(c => c.text || '').join('');
+      usage = data.usage || null;
     } else if (prov.dialect === 'gemini') {
       text = ((data.candidates || [])[0] || {}).content?.parts?.map(p => p.text || '').join('') || '';
+      usage = data.usageMetadata || null;
     } else {
-      text = (data.choices || [])[0]?.message?.content || '';
+      const msg = (data.choices || [])[0]?.message || {};
+      // Một số model suy luận trả nội dung ở reasoning_content khi
+      // content rỗng — lấy làm fallback thay vì trả về rỗng.
+      text = msg.content || msg.reasoning_content || '';
+      usage = data.usage || null;
     }
-    return res.status(200).json({ ok: true, text });
+    if (!text) {
+      return res.status(200).json({ ok: false, error: 'Model trả về rỗng' });
+    }
+    return res.status(200).json({ ok: true, text, usage });
   } catch (e) {
     // Không trả chi tiết lỗi (có thể chứa host/key trong message).
     return res.status(200).json({ ok: false, error: 'Không gọi được provider' });
