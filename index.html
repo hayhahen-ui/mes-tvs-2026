@@ -43,7 +43,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/style.css?v=2" />
 </head>
 
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-200">
@@ -571,7 +571,7 @@
         <div class="bg-white p-4 rounded-xl border border-slate-200 flex items-center justify-between shadow-xs">
           <div>
             <div class="text-xs text-slate-500 font-semibold">Mã BTP Đạt Mức An Toàn (≥ 1.000 đôi)</div>
-            <div class="text-xl font-extrabold text-emerald-600" id="btpSafeCount">0 / 28 mã</div>
+            <div class="text-xl font-extrabold text-emerald-600" id="btpSafeCount">0 / 32 mã</div>
           </div>
           <i data-lucide="shield-check" class="w-6 h-6 text-emerald-500"></i>
         </div>
@@ -822,6 +822,9 @@
           </div>
         </div>
       </div>
+
+      <!-- Live Simulation Result (filled by renderSimulationTab) -->
+      <div id="simulationResult" class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3"></div>
 
       <!-- Comparison Matrix: Before vs After Kaizen vs Simulation -->
       <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-3">
@@ -1154,16 +1157,26 @@
   </footer>
 
   <!-- Application Scripts -->
-  <script src="js/data.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="js/optimizer.js"></script>
-  <script src="js/charts.js"></script>
-  <script src="js/io.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/data.js?v=2"></script>
+  <script src="js/storage.js?v=2"></script>
+  <script src="js/optimizer.js?v=2"></script>
+  <script src="js/charts.js?v=2"></script>
+  <script src="js/io.js?v=2"></script>
+  <script src="js/app.js?v=2"></script>
   
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      window.MESApp.init();
+      try {
+        if (!window.MESApp) throw new Error('MESApp chưa được nạp (js/app.js).');
+        window.MESApp.init();
+      } catch (e) {
+        console.error('MES boot failed:', e);
+        const main = document.querySelector('main');
+        const banner = document.createElement('div');
+        banner.className = 'bg-rose-50 border border-rose-300 text-rose-900 rounded-2xl p-4 text-sm font-semibold';
+        banner.textContent = 'Không khởi động được hệ thống: ' + (e && e.message ? e.message : e) + ' — Hãy tải lại trang (Ctrl+F5) hoặc bấm nút Gốc để khôi phục dữ liệu gốc.';
+        if (main && main.firstChild) main.insertBefore(banner, main.firstChild);
+      }
       if (window.lucide) {
         window.lucide.createIcons();
       }

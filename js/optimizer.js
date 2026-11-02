@@ -143,9 +143,37 @@ window.MESOptimizer = {
   /**
    * Run 5M Optimization algorithm (Kế hoạch 1)
    */
+  // FIX 02/11/2026: app.js calls scheduleAllOrders(), but only solve()
+  // existed — so MESApp.init() threw before any tab listener was bound.
+  // This wrapper returns the shape app.js + io.js actually read:
+  // { schedules: [{ po_no, milestones: {start_ep_de, mai_de_xong,
+  // dun_chat_48h, in_lua_u24h, giao_lvf} }], summary, score5m }.
+  scheduleAllOrders(orders, params = {}) {
+    const solved = this.solve(orders, params);
+    const schedules = solved.rows.map(po => ({
+      ...po,
+      po_no: po.po_no || po.poCode,
+      milestones: {
+        start_ep_de: po.date_ep_de,
+        mai_de_xong: po.date_mai_de,
+        dun_chat_48h: po.date_dun_chat,
+        in_lua_u24h: po.date_in_lua,
+        giao_lvf: po.date_go_lvf
+      }
+    }));
+    return {
+      schedules,
+      rows: solved.rows,
+      summary: solved.summary,
+      // app.js reads planResult.score5m.total
+      score5m: { total: solved.summary.score5M, ...solved.summary.after5M }
+    };
+  },
+
   solve(orders, params = {}) {
     const lvf = Number(params.lvfDemand || this.CAPACITY.lvfDemand);
-    const molds = Number(params.molds || 12);
+    // Simulation tab used to write outsoleMolds; accept both keys.
+    const molds = Number(params.molds || params.outsoleMolds || 12);
     const canVaiMode = params.canVaiMode || 'batch';
     const epDeMode = params.epDeMode || 'preload_ot';
     const enableCampaign = params.campaignBatching !== false;

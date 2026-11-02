@@ -1,5 +1,21 @@
 # MES-anti — Hệ Thống Quản Trị Sản Xuất LAF & Tối Ưu 5M (Dữ Liệu Thật TVS)
 
+## 0. KHẮC PHỤC 02/11/2026 — "BẢN LIVE VERCEL CÁC TAB KHÔNG HOẠT ĐỘNG"
+
+Nguyên nhân gốc (không phải do Vercel, lỗi này chết ngay cả khi chạy local):
+
+1. `js/app.js` gọi `MESOptimizer.scheduleAllOrders()` nhưng `js/optimizer.js` chỉ có `solve()` → `MESApp.init()` ném lỗi **trước** `bindGlobalEvents()`, nên các nút tab không bao giờ được gắn sự kiện click.
+2. `js/storage.js` chỉ lưu `{ordersGrouped, workstations, ...}` nhưng `app.js` đọc `state.segments` và `state.subProcesses` ở khắp nơi (Dashboard, Kho BTP, Phân đoạn, +650, +1 Ca) → các field này là `undefined`, render nào chạm tới cũng lỗi.
+3. Mọi thao tác ghi đều gọi `MESStorage.saveState()` — hàm này **không tồn tại** (chỉ có `save()`), nên nút +/form/toggle đều chết sau khi bấm.
+4. `js/app.js` đọc biến `TVS_DATA` (không tồn tại; `js/data.js` định nghĩa `TVS_MASTER_DATA`) và gọi `MESCharts` sai chữ ký `(data)` thay vì `(canvasId, data, ...)` — toàn bộ 6 biểu đồ Dashboard không vẽ được; tên hàm radar cũng sai (`renderRadar5mChart` vs `renderRadar5M`).
+5. Nút header gọi `MESStorage.resetToDefault/downloadBackup/restoreBackup` — cả 3 đều không tồn tại.
+6. Cột size ở chế độ "651 dòng size" và file Excel export luôn = 0, vì `sizes` dùng key `"UK 6"` trong khi bảng đọc key `"6"`.
+7. Tab Mô phỏng chạy xong không hiển thị kết quả gì (bảng so sánh trong HTML là số liệu tĩnh); tham số khuôn cũng bị ghi nhầm key (`outsoleMolds` thay vì `molds`) nên optimizer luôn dùng 12 khuôn.
+8. Toast không bao giờ hiện (CSS chỉ hiện khi có class `.show`, code cũ không thêm class này).
+9. `vercel.json` cache `js/css` dạng `immutable` 1 năm — kể cả sau khi deploy bản sửa, trình duyệt đã cache bản lỗi vẫn không nhận bản mới. Đã đổi về `max-age=0, must-revalidate` + thêm `?v=2` vào các file local.
+
+Cách sửa: `storage.js` tự build/migrate `segments` + `subProcesses` + chuẩn hóa bàn giao/Kaizen từ dữ liệu gốc; `optimizer.js` thêm `scheduleAllOrders()` đúng shape `schedules[].milestones`; `app.js` sửa toàn bộ chữ ký chart + `TVS_DATA` → `state`; `storage.js` thêm alias `saveState/resetToDefault/downloadBackup/restoreBackup` và đồng bộ 2 chiều WIP/actual trước khi lưu; tab Mô phỏng hiển thị kết quả live; import 0 dòng báo cảnh báo thay vì "thành công". Lưu ý: `data/tvs_data.json` hiện không được app nạp (app dùng `js/data.js` nhúng sẵn) — file này chỉ còn vai trò tham chiếu, dòng tổng cuối (mã BTP rỗng) không phải là 1 mã BTP.
+
 > **Mục tiêu**: Hệ thống điều hành sản xuất (MES/ERP) chuyên biệt cho **Phân xưởng LAF** (sản xuất giày ủng cao su xuất khẩu), giải bài toán tối ưu hóa theo mô hình **5M** kết hợp **Kế hoạch 1 (Lịch lùi Backward Scheduling)** đảm bảo **100% đúng Ngày xuất Kinh doanh (OTD = 100%)**, chạy online trên nền tảng web, sẵn sàng deploy lên **Vercel** và quản lý mã nguồn trên **GitHub**.
 
 ---

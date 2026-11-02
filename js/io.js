@@ -473,7 +473,14 @@ window.MESIO = {
     MESStorage.saveState(MESApp.state);
     MESApp.runOptimization();
     MESApp.render();
-    MESApp.showToast(`Import thành công ${count} bản ghi dữ liệu!`, 'success');
+    // FIX 02/11/2026: the old code reported "success" even for 0 rows —
+    // notably the dashboard import target has no handler at all, so every
+    // dashboard import falsely claimed success. Say so plainly instead.
+    if (count === 0) {
+      MESApp.showToast('Không tìm thấy bản ghi hợp lệ trong file/dữ liệu đã dán — kiểm tra lại tên cột theo Template.', 'warning');
+    } else {
+      MESApp.showToast(`Import thành công ${count} bản ghi dữ liệu!`, 'success');
+    }
   },
 
   /**

@@ -9,7 +9,7 @@
 
 window.MESApp = {
   currentTab: 'dashboard',
-  activeWorkstationId: 'ws_luyen',
+  activeWorkstationId: 'CAN_VAI',
   state: null,
   planResult: null,
   donutDimension: 'color',
@@ -54,7 +54,7 @@ window.MESApp = {
     if (!this.state || !this.state.ordersGrouped) return;
     this.planResult = MESOptimizer.scheduleAllOrders(
       this.state.ordersGrouped,
-      this.state.simParams || TVS_DATA.simParams
+      this.state.simParams || (window.TVS_MASTER_DATA && window.TVS_MASTER_DATA.simParams) || { lvfDemand: 650, molds: 12, canVaiMode: 'batch', epDeMode: 'preload_ot', campaignBatching: true }
     );
   },
 
@@ -145,7 +145,7 @@ window.MESApp = {
     const btnRunAll = document.getElementById('btnRunAllSubsteps');
     if (btnRunAll) {
       btnRunAll.onclick = () => {
-        const ws = (TVS_DATA.workstations || []).find(w => w.id === this.activeWorkstationId);
+        const ws = (this.state.workstations || []).find(w => w.id === this.activeWorkstationId);
         if (ws && ws.subProcesses) {
           ws.subProcesses.forEach(sp => {
             sp.currentOutput = (sp.currentOutput || 0) + 650;
@@ -463,23 +463,20 @@ window.MESApp = {
   },
 
   renderDashboardCharts() {
-    // 1. Capacity Combo Bar + Line Chart
-    MESCharts.renderCapacityChart(this.state.segments);
-
-    // 2. Leadtime S-Curve Line Trend Chart
-    MESCharts.renderLeadtimeChart(this.state.ordersGrouped);
-
-    // 3. 3-Dimension Donut Chart
-    MESCharts.renderDonutChart(this.state.ordersGrouped, this.donutDimension);
-
-    // 4. Radar 5M Chart
-    MESCharts.renderRadar5mChart(TVS_DATA.before5M, TVS_DATA.after5M);
-
-    // 5. Size Distribution & Mold Allocation Chart
-    MESCharts.renderSizeDistChart(this.state.ordersGrouped, TVS_DATA.moldAlloc);
-
-    // 6. WIP Stacked Bar Chart
-    MESCharts.renderWipStackedChart(this.state.subProcesses);
+    // FIX 02/11/2026: charts.js expects (canvasId, data, ...). The old code
+    // passed the data array as canvasId, so every chart silently failed
+    // (or threw on the donut/radar calls) and the dashboard never finished
+    // rendering. Each call is guarded so a missing Chart.js CDN can never
+    // kill the whole tab again — tables still render without charts.
+    const safeChart = (label, fn) => {
+      try { fn(); } catch (e) { console.warn('Chart skipped (' + label + '):', e); }
+    };
+    safeChart('capacity', () => MESCharts.renderCapacityChart('capacityChart', this.state.workstations));
+    safeChart('leadtime', () => MESCharts.renderLeadtimeChart('leadtimeChart', this.state.ordersGrouped));
+    safeChart('donut', () => MESCharts.renderDonutChart('colorPieChart', this.state.ordersGrouped, this.donutDimension));
+    safeChart('radar', () => MESCharts.renderRadar5M('radar5mChart', this.state.before5M, this.state.after5M));
+    safeChart('size', () => MESCharts.renderSizeDistChart('sizeDistChart', this.state.ordersRaw, this.state.moldAlloc));
+    safeChart('wip', () => MESCharts.renderWipStackedChart('wipStackedChart', this.state.workstations));
   },
 
   renderWorkshopEfficiencyTable() {
@@ -784,7 +781,7 @@ window.MESApp = {
     if (!thead || !tbody) return;
 
     const filtered = this.getFilteredOrders();
-    if (countEl) countEl.textContent = `Hiển thị ${filtered.length} / ${this.state.ordersGrouped.length} PO`;
+    if (countEl) countEl.textContent = `Hiển thị ${filtered.length} / ${this.state.ordersGrouped.length} PO` + (this.orderViewMode === 'gantt' ? ' • Gantt chỉ vẽ 30 PO sớm nhất' : '');
 
     if (this.orderViewMode === 'grouped') {
       thead.innerHTML = `
@@ -922,8 +919,9 @@ window.MESApp = {
      TAB 3: PHÂN ĐOẠN & 32 CÔNG ĐOẠN NHỎ
      ========================================================================= */
   renderWorkstationsTab() {
-    const workstations = TVS_DATA.workstations || [];
+    const workstations = this.state.workstations || [];
     const activeWs = workstations.find(w => w.id === this.activeWorkstationId) || workstations[0];
+    if (activeWs) this.activeWorkstationId = activeWs.id;
 
     // 1. Render Workstation Selector Buttons
     const selectorContainer = document.getElementById('workstationSelectorBtns');
@@ -1098,7 +1096,7 @@ window.MESApp = {
   },
 
   recordSubProcessOutput(wsId, stepIdx, qty) {
-    const ws = (TVS_DATA.workstations || []).find(w => w.id === wsId);
+    const ws = (this.state.workstations || []).find(w => w.id === wsId);
     if (!ws || !ws.subProcesses[stepIdx]) return;
     const sp = ws.subProcesses[stepIdx];
 
@@ -1343,12 +1341,50 @@ window.MESApp = {
      TAB 7: BỘ THAM SỐ & MÔ PHỎNG 5M
      ========================================================================= */
   renderSimulationTab() {
+    // Sync inputs with the last saved params so a re-opened tab shows
+    // what actually ran, not the hardcoded defaults.
+    const sp = this.state.simParams || {};
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v != null) el.value = v; };
+    setVal('simLvfDemand', sp.lvfDemand);
+    setVal('simMolds', sp.molds || sp.outsoleMolds);
+    setVal('simCanVaiMode', sp.canVaiMode);
+    setVal('simEpDeMode', sp.epDeMode);
+    if (sp.campaignBatching != null) setVal('simCampaignBatching', String(sp.campaignBatching));
+
+    // Live result of the last run (was missing entirely before).
+    const resEl = document.getElementById('simulationResult');
+    if (resEl) {
+      const sum = this.planResult && this.planResult.summary;
+      if (sum) {
+        const feasible = sum.capEpDay >= (sp.lvfDemand || 650);
+        resEl.innerHTML = `
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-900 text-sm">Kết Quả Kịch Bản Đang Chạy</h3>
+            <span class="px-2.5 py-1 rounded-full text-xs font-bold ${feasible ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+              ${feasible ? 'Đủ công suất Ép đế' : 'NGHẼN Ép đế — thiếu ' + Math.max(0, (sp.lvfDemand || 650) - sum.capEpDay) + ' đôi/ngày'}
+            </span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mt-3 text-xs">
+            <div><div class="text-slate-500">Điểm 5M</div><div class="text-lg font-extrabold text-slate-900">${sum.score5M} / 100</div></div>
+            <div><div class="text-slate-500">Công suất Ép đế</div><div class="text-lg font-extrabold text-slate-900">${sum.capEpDay} đôi/ngày</div></div>
+            <div><div class="text-slate-500">Số ngày SX hết 113 PO</div><div class="text-lg font-extrabold text-slate-900">${sum.workDays} ngày</div></div>
+            <div><div class="text-slate-500">Số lần đổi màu</div><div class="text-lg font-extrabold text-slate-900">${sum.colorChanges} lần</div></div>
+            <div><div class="text-slate-500">OTD</div><div class="text-lg font-extrabold text-emerald-600">${sum.otd}%</div></div>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-3">Tham số đang chạy: LVF ${sum.params.lvfDemand} đôi/ngày • ${sum.params.molds} khuôn • Cán vải: ${sum.params.canVaiMode} • Ép đế: ${sum.params.epDeMode} • Gom màu: ${sum.params.campaignBatching ? 'Bật' : 'Tắt'} • Cao su ${sum.rubberKg.toLocaleString('vi-VN')} kg • Vải ${sum.fabricSqm.toLocaleString('vi-VN')} m².</p>`;
+      } else {
+        resEl.innerHTML = '<p class="text-xs text-slate-500">Bấm “Chạy Thuật Toán Tối Ưu Ngay” để tính kết quả kịch bản — bảng so sánh phía dưới là số liệu mẫu cố định, không phải kết quả của lần chạy.</p>';
+      }
+    }
+
     const btnRun = document.getElementById('btnRunSimulation');
     if (btnRun) {
       btnRun.onclick = () => {
+        const molds = parseInt(document.getElementById('simMolds').value) || 12;
         const simParams = {
           lvfDemand: parseInt(document.getElementById('simLvfDemand').value) || 650,
-          outsoleMolds: parseInt(document.getElementById('simMolds').value) || 12,
+          molds: molds,
+          outsoleMolds: molds,
           canVaiMode: document.getElementById('simCanVaiMode').value,
           epDeMode: document.getElementById('simEpDeMode').value,
           campaignBatching: document.getElementById('simCampaignBatching').value === 'true',
@@ -1518,9 +1554,11 @@ window.MESApp = {
     `;
 
     toast.classList.remove('hidden');
+    toast.classList.add('show');
     if (window.lucide) window.lucide.createIcons();
 
     setTimeout(() => {
+      toast.classList.remove('show');
       toast.classList.add('hidden');
     }, 3500);
   }
