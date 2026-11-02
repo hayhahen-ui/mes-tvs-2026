@@ -193,6 +193,37 @@ nút “Phân tích bằng AI” ở tab 7/tab 9. Đã kiểm tra endpoint sốn
 `GET /v1/models` không key trả 401 đúng chuẩn OpenAI. Tài nguyên local
 đổi sang `?v=6`.
 
+## 0g. SỬA LỖI AI RIVER “FAILED TO FETCH” BẰNG PROXY VERCEL (02/11/2026)
+
+Triệu chứng: tab 9 đã báo “AI đã kết nối” (River + Kimi-K3, key
+••••HoMI đã lưu đúng) nhưng bấm “Phân tích bằng AI” thì lỗi
+“Failed to fetch”. Nguyên nhân: River không trả CORS cho origin của
+web nên trình duyệt chặn gọi trực tiếp tới api.river.ai (giống
+Anthropic) — key lưu đúng, lỗi nằm ở đường gọi, không phải ở key.
+Dự án Owly cũng gọi River qua proxy server (api/ai-passage.js) chứ
+không gọi trực tiếp từ browser, nên MES làm theo cùng cách:
+- Thêm Vercel Function `api/mes-ai-proxy.js` (POST, cùng domain app):
+  nhận key BYOK qua header Bearer, chuyển tiếp tới provider, không
+  lưu/log key, không có key server fallback, allowlist cứng 8 provider,
+  timeout 60s (test 30s), lỗi chỉ trả status chung. Hỗ trợ cả 3 dialect
+  (OpenAI-compatible, Anthropic, Gemini) và 2 action (test qua
+  GET /models, chat qua /chat/completions hoặc tương đương).
+- `js/ai.js` đổi sang gọi proxy trước, gọi trực tiếp sau chỉ khi proxy
+  chưa deploy (404/405): lỗi provider (401/429/...) trả đúng status,
+  không còn gộp thành “Failed to fetch”; thông báo lỗi ghi rõ provider
+  và cách kiểm tra deploy. Nút lỗi AI nay có thêm nút “Xem đánh giá
+  theo luật thay thế”.
+- Đã kiểm chứng proxy ở local bằng key giả: GET → 405 “Chỉ hỗ trợ
+  POST”, thiếu key → 401, provider lạ → 400, test River bằng key giả →
+  River trả 401 và proxy chuyển tiếp đúng `{ok:false, status:401}`.
+  Với key thật của user, cùng đường này sẽ trả ok:true (kiểm chứng
+  cuối bằng nút “Kiểm tra kết nối” ở tab 9 sau khi Vercel deploy).
+- Cách kiểm tra deploy sau khi push: mở
+  `https://mes-tvs-2026.vercel.app/api/mes-ai-proxy` trên trình duyệt
+  phải thấy `{"ok":false,"error":"Chỉ hỗ trợ POST"}` (chứng tỏ function
+  đã lên), không phải trang 404 của Vercel. Sau đó bấm “Kiểm tra kết
+  nối” rồi mới “Phân tích bằng AI”. Tài nguyên local đổi sang `?v=7`.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

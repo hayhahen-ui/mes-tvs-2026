@@ -1809,10 +1809,10 @@ window.MESApp = {
   // Đánh giá tác động theo luật (không cần AI, không bịa số):
   // chạy thử bộ giải với tham số giả định từ form, đối chiếu POH +
   // khả thi trước/sau. Không lưu gì cho tới khi user bấm Lưu.
-  assessKaizen(idx) {
+  assessKaizen(idx, targetElId) {
     const kz = this.state.kaizenItems[idx];
     if (!kz) return;
-    const el = document.getElementById(`kzImpact_${idx}`);
+    const el = document.getElementById(targetElId || `kzImpact_${idx}`);
     const demand = this.getPlanDemand();
     if (demand == null) {
       if (el) el.innerHTML = '<p class="text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-2">Chưa đánh giá được — nhập nhu cầu LVF ở tab Kế Hoạch trước, vì mọi tác động đều tính so với nhu cầu đó.</p>';
@@ -1896,7 +1896,8 @@ window.MESApp = {
     };
     const res = await window.MESAI.analyzeBottleneck(ctx);
     if (!res.ok) {
-      if (el) el.innerHTML = `<p class="text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">${res.error}</p>`;
+      if (el) el.innerHTML = `<p class="text-rose-700 bg-rose-50 border border-rose-200 rounded-lg p-2">${res.error}</p>
+        <button onclick="MESApp.assessKaizen(${idx}, '${targetElId || `kzImpact_${idx}`}')" class="px-3 py-1.5 rounded-lg font-bold text-xs bg-slate-100 hover:bg-slate-200 border border-slate-300 transition">Xem đánh giá theo luật thay thế</button>`;
       return;
     }
     if (!this.aiSuggestions) this.aiSuggestions = {};

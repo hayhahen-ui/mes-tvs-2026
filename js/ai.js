@@ -24,6 +24,11 @@ window.MESAI = {
   PROVIDER_STORAGE: 'mes-ai-provider-v1',
   MODEL_STORAGE: 'mes-ai-model-v1',
 
+  // Proxy cùng domain (Vercel Function api/mes-ai-proxy.js). Trình duyệt
+  // gọi cùng domain nên không bị CORS chặn; proxy (server) gọi tiếp
+  // tới provider bằng key BYOK của user, không lưu/log key.
+  PROXY_PATH: '/api/mes-ai-proxy',
+
   PROVIDERS: {
     openai: {
       label: 'OpenAI',
@@ -147,14 +152,49 @@ window.MESAI = {
     } catch (e) { /* ignore */ }
   },
 
-  // Kiểm tra kết nối bằng endpoint models (không tốn token, không
-  // gửi nội dung sản xuất). Trả về {ok, message} — không bao giờ trả
-  // key hay nội dung lỗi chứa key về UI.
+  // Gọi proxy cùng domain. Trả về:
+  //  { via: 'proxy', data } khi proxy trả JSON,
+  //  { via: 'proxy-unavailable' } khi proxy không có (404/405) hoặc
+  //  không gọi được (app chưa deploy function) → caller fallback trực tiếp.
+  async proxyRequest(payload, key) {
+    try {
+      const res = await fetch(this.PROXY_PATH, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer ' + key
+        },
+        body: JSON.stringify(payload)
+      });
+      if (res.status === 404 || res.status === 405) return { via: 'proxy-unavailable' };
+      const data = await res.json().catch(() => null);
+      if (!data) return { via: 'proxy-unavailable' };
+      return { via: 'proxy', data };
+    } catch (e) {
+      return { via: 'proxy-unavailable' };
+    }
+  },
+
+  providerLabel(provId) {
+    return (this.PROVIDERS[provId] && this.PROVIDERS[provId].label) || provId || 'provider';
+  },
+
+  // Kiểm tra kết nối: proxy trước, trực tiếp sau (proxy 404 thì fallback).
   async testConnection() {
     const key = this.getKey();
     const provId = this.getProvider();
     if (!key || !provId) return { ok: false, message: 'Chưa có key AI.' };
     const prov = this.PROVIDERS[provId];
+    const label = this.providerLabel(provId);
+    const viaProxy = await this.proxyRequest({ provider: provId, model: this.getModel() || prov.defaultModel, action: 'test' }, key);
+    if (viaProxy.via === 'proxy') {
+      const d = viaProxy.data;
+      if (d.ok) return { ok: true, message: `Kết nối OK qua proxy của app — ${label} chấp nhận key này.` };
+      if (d.status === 401 || d.status === 403) {
+        return { ok: false, message: `Key bị ${label} từ chối (401/403) — kiểm tra lại key hoặc quyền của key.` };
+      }
+      return { ok: false, message: `${label} trả ${d.status || 'lỗi'} qua proxy của app.` };
+    }
     try {
       let url, headers;
       if (prov.dialect === 'anthropic') {
@@ -172,19 +212,29 @@ window.MESAI = {
         headers = { Authorization: 'Bearer ' + key };
       }
       const res = await fetch(url, { headers });
-      if (res.ok) return { ok: true, message: `Kết nối OK — ${prov.label} chấp nhận key này.` };
-      const txt = await res.text().catch(() => '');
+      if (res.ok) return { ok: true, message: `Kết nối OK trực tiếp — ${label} chấp nhận key này.` };
       const status = res.status;
       if (status === 401 || status === 403) {
-        return { ok: false, message: 'Key bị từ chối (401/403) — kiểm tra lại key hoặc quyền của key.' };
+        return { ok: false, message: `Key bị ${label} từ chối (401/403) — kiểm tra lại key hoặc quyền của key.` };
       }
-      return { ok: false, message: `Máy chủ trả ${status}. ${txt ? txt.slice(0, 120) : ''}`.trim() };
+      return { ok: false, message: `${label} trả ${status} khi gọi trực tiếp.` };
     } catch (e) {
       return {
         ok: false,
-        message: 'Không gọi được API (mạng/CORS). Với Anthropic thì đây là lỗi CORS từ trình duyệt — hãy dùng provider OpenAI-compatible (OpenAI, Groq, Novita, DeepSeek, OpenRouter) thay vì Anthropic.'
+        message: `Không gọi được ${label} từ trình duyệt và proxy của app cũng không có/không gọi được (mạng/CORS hoặc Vercel chưa deploy function /api/mes-ai-proxy — mở link đó phải thấy "Chỉ hỗ trợ POST", không phải trang 404).`
       };
     }
+  },
+
+  // Tách text model trả về thành JSON phân tích (nếu parse được).
+  parseAnalysis(text) {
+    const cleaned = String(text || '').replace(/```json|```/g, '').trim();
+    const start = cleaned.indexOf('{');
+    const end = cleaned.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      try { return JSON.parse(cleaned.slice(start, end + 1)); } catch (e) { return null; }
+    }
+    return null;
   },
 
   buildPrompt(ctx) {
@@ -202,14 +252,35 @@ Nhiệm vụ: phân tích ngắn gọn bằng tiếng Việt và CHỈ trả v�
 Trong đó suggestedNorm là số đôi/ngày (hoặc null nếu không đề xuất đổi định mức), suggestedMolds là số khuôn (hoặc null), suggestedEpDeMode là một trong "preload_ot"/"regular_only"/"two_shifts" (hoặc null), suggestedCanVaiMode là "batch"/"daily" (hoặc null). Không được bịa số liệu không có trong dữ liệu trên; nếu không đủ dữ liệu thì ghi rõ "chưa đủ dữ liệu" trong explanation.`;
   },
 
-  // Phân tích 1 điểm nghẽn. Trả về {ok, parsed, raw, error}.
+  // Phân tích 1 điểm nghẽn: proxy cùng domain trước (tránh CORS),
+  // trực tiếp sau nếu proxy chưa deploy. Lỗi của provider (401/429/...)
+  // trả về đúng status, không gộp thành "Failed to fetch" chung chung.
   async analyzeBottleneck(ctx) {
     const key = this.getKey();
     const provId = this.getProvider();
     if (!key || !provId) return { ok: false, error: 'Chưa có key AI.' };
     const prov = this.PROVIDERS[provId];
+    const label = this.providerLabel(provId);
     const model = this.getModel() || prov.defaultModel;
     const prompt = this.buildPrompt(ctx);
+    const system = 'Bạn là kỹ sư công nghiệp cho phân xưởng giày LAF. Chỉ trả về JSON đúng dạng được yêu cầu, không bịa số liệu.';
+
+    // 1) Qua proxy cùng domain.
+    const viaProxy = await this.proxyRequest({ provider: provId, model, action: 'chat', system, prompt }, key);
+    if (viaProxy.via === 'proxy') {
+      const d = viaProxy.data;
+      if (d.ok) return { ok: true, parsed: this.parseAnalysis(d.text), raw: d.text };
+      if (d.status === 401 || d.status === 403) {
+        return { ok: false, error: `Key bị ${label} từ chối (401/403) — kiểm tra lại key hoặc quyền của key.` };
+      }
+      if (d.status === 429) {
+        return { ok: false, error: `${label} hết lượt (429) — chờ rồi thử lại.` };
+      }
+      return { ok: false, error: `${label} trả lỗi qua proxy của app (${d.error || 'không rõ'}).` };
+    }
+
+    // 2) Fallback trực tiếp (chỉ có tác dụng với provider mở CORS như
+    // OpenAI/Groq/OpenRouter; River/Anthropic/DeepSeek thường chặn).
     try {
       let text = '';
       if (prov.dialect === 'anthropic') {
@@ -255,7 +326,7 @@ Trong đó suggestedNorm là số đôi/ngày (hoặc null nếu không đề xu
             temperature: 0.2,
             max_tokens: 900,
             messages: [
-              { role: 'system', content: 'Bạn là kỹ sư công nghiệp cho phân xưởng giày LAF. Chỉ trả về JSON đúng dạng được yêu cầu, không bịa số liệu.' },
+              { role: 'system', content: system },
               { role: 'user', content: prompt }
             ]
           })
@@ -264,16 +335,16 @@ Trong đó suggestedNorm là số đôi/ngày (hoặc null nếu không đề xu
         const data = await res.json();
         text = (data.choices || [])[0]?.message?.content || '';
       }
-      const cleaned = String(text || '').replace(/```json|```/g, '').trim();
-      const start = cleaned.indexOf('{');
-      const end = cleaned.lastIndexOf('}');
-      let parsed = null;
-      if (start >= 0 && end > start) {
-        try { parsed = JSON.parse(cleaned.slice(start, end + 1)); } catch (e) { parsed = null; }
-      }
-      return { ok: true, parsed, raw: text };
+      return { ok: true, parsed: this.parseAnalysis(text), raw: text };
     } catch (e) {
-      return { ok: false, error: 'Gọi AI thất bại: ' + (e && e.message ? e.message : 'lỗi mạng/CORS') + '. Dùng phân tích theo luật ở dưới thay thế.' };
+      const msg = (e && e.message) || '';
+      if (/^HTTP 401/.test(msg)) {
+        return { ok: false, error: `Key bị ${label} từ chối (401) — kiểm tra lại key.` };
+      }
+      if (/^HTTP 429/.test(msg)) {
+        return { ok: false, error: `${label} hết lượt (429) — chờ rồi thử lại.` };
+      }
+      return { ok: false, error: `Không gọi được ${label} từ trình duyệt (mạng/CORS — ${label} chặn gọi trực tiếp, cần qua proxy) và proxy của app cũng không có/không gọi được. Kiểm tra Vercel đã deploy function /api/mes-ai-proxy chưa: mở link đó phải thấy "Chỉ hỗ trợ POST", không phải trang 404.` };
     }
   }
 };
