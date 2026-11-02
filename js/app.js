@@ -333,8 +333,10 @@ window.MESApp = {
   renderCurrentTab() {
     if (this.currentTab === 'dashboard') {
       this.renderDashboardTab();
-    } else if (this.currentTab === 'orders_planning') {
-      this.renderOrdersPlanningTab();
+    } else if (this.currentTab === 'orders') {
+      this.renderOrdersTab();
+    } else if (this.currentTab === 'production_planning') {
+      this.renderProductionPlanningTab();
     } else if (this.currentTab === 'workstations') {
       this.renderWorkstationsTab();
     } else if (this.currentTab === 'btp_inventory') {
@@ -581,13 +583,38 @@ window.MESApp = {
   },
 
   /* =========================================================================
-     TAB 2: ĐƠN HÀNG KD & KẾ HOẠCH 5M
+     TAB 2: ĐƠN HÀNG KD (đã tách khỏi tab Kế Hoạch ngày 02/11/2026)
+     TAB 3: KẾ HOẠCH SẢN XUẤT TỐI ƯU (5M + giải thích thuật toán)
      ========================================================================= */
-  renderOrdersPlanningTab() {
-    this.render5mBannerCards();
-    this.updatePohCalculator();
+  renderOrdersTab() {
     this.populateOrderFilterDropdowns();
     this.renderOrdersTable();
+  },
+
+  renderProductionPlanningTab() {
+    this.render5mBannerCards();
+    this.renderPlanningAlgorithm();
+    this.updatePohCalculator();
+  },
+
+  // Alias cũ: giữ để code nào còn gọi tên cũ vẫn chạy (gọi cả 2 tab mới).
+  renderOrdersPlanningTab() {
+    this.renderOrdersTab();
+    this.renderProductionPlanningTab();
+  },
+
+  // Điền số liệu thật vào khối giải thích thuật toán ở tab Kế Hoạch,
+  // để con số trong lời giải thích luôn khớp với dữ liệu đang nạp.
+  renderPlanningAlgorithm() {
+    const totalPairs = this.state.ordersGrouped.reduce((acc, o) => acc + o.total_pairs, 0);
+    const totalOrders = this.state.ordersGrouped.length;
+    const setText = (id, text) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = text;
+    };
+    setText('algoTotalOrders', `${totalOrders} PO`);
+    setText('algoTotalPairs', `${totalPairs.toLocaleString('vi-VN')} đôi`);
+    setText('algoTotalDays', `${(totalPairs / 650).toFixed(1)} ngày SX`);
   },
 
   render5mBannerCards() {

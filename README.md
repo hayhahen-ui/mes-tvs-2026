@@ -40,6 +40,22 @@ mã màu, số đôi và ngày xuất là thật từ `js/data.js` (113 PO, 64.8
 trong Excel vì `data.js` không chứa các số liệu đó. APS chạy offline bằng
 Python, Vercel không chạy được nó.
 
+## 0c. TÁCH TAB 2 THÀNH 2 TAB (02/11/2026)
+
+Tab cũ “2. Đơn Hàng KD & Kế Hoạch 5M” đã tách thành 2 tab, không mất nội dung nào:
+
+- **Tab 2. Đơn Hàng KD (113 PO):** chỉ còn quản lý đơn hàng — thêm đơn, import
+  XLSX, tải template, lọc theo đợt/màu/nước, xem 113 PO gộp / 651 dòng size /
+  Gantt 5M, và nút “Sang Kế Hoạch Tối Ưu →”.
+- **Tab 3. Kế Hoạch Sản Xuất Tối Ưu:** banner 5M, khối giải thích thuật toán
+  từng bước (nạp dữ liệu thật → nhịp 650 đôi/ngày → lịch lùi backward
+  −5/−6/−7/−8/−19 ngày → gom màu 42 lần xuống 4 lần → cân bằng 5M + 4 chốt kỹ
+  thuật → kiểm tra OTD 100%), bộ tính POH, nút Export Kế Hoạch 5M và nút về
+  Đơn Hàng KD. Khối giải thích cũng nói rõ APS CP-SAT trong `tools/` là công
+  cụ nâng cao chạy ngoài trình duyệt, không thay thế lịch 5M đa công đoạn.
+- Các tab sau đánh số lại thành 4–8. Tài nguyên local đổi sang `?v=3` để
+  trình duyệt không dùng cache bản tab cũ.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:

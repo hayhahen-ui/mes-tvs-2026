@@ -43,7 +43,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <!-- Custom Styles -->
-  <link rel="stylesheet" href="css/style.css?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=3" />
 </head>
 
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-200">
@@ -120,7 +120,7 @@
       </div>
     </div>
 
-    <!-- ==================== MAIN 7 TABS BAR ==================== -->
+    <!-- ==================== MAIN 8 TABS BAR ==================== -->
     <div class="bg-slate-900 border-t border-slate-800/80 px-4 overflow-x-auto custom-scrollbar">
       <div class="max-w-[1720px] mx-auto flex items-center gap-1 py-1">
         
@@ -129,34 +129,39 @@
           <span>1. Dashboard Tổng Hợp & Chi Tiết</span>
         </button>
 
-        <button data-tab="orders_planning" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+        <button data-tab="orders" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
+          <i data-lucide="clipboard-list" class="w-4 h-4"></i>
+          <span>2. Đơn Hàng KD (113 PO)</span>
+        </button>
+
+        <button data-tab="production_planning" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="calendar-check" class="w-4 h-4"></i>
-          <span>2. Đơn Hàng KD & Kế Hoạch 5M (113 PO)</span>
+          <span>3. Kế Hoạch Sản Xuất Tối Ưu</span>
         </button>
 
         <button data-tab="workstations" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="cpu" class="w-4 h-4"></i>
-          <span>3. Phân Đoạn & 32 Công Đoạn Nhỏ</span>
+          <span>4. Phân Đoạn & 32 Công Đoạn Nhỏ</span>
         </button>
 
         <button data-tab="btp_inventory" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="boxes" class="w-4 h-4"></i>
-          <span>4. Kho BTP Nhỏ WIP (32 Mã)</span>
+          <span>5. Kho BTP Nhỏ WIP (32 Mã)</span>
         </button>
 
         <button data-tab="lvf_handover" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="truck" class="w-4 h-4"></i>
-          <span>5. Bàn Giao BTP Sang LVF</span>
+          <span>6. Bàn Giao BTP Sang LVF</span>
         </button>
 
         <button data-tab="kaizen_center" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="flame" class="w-4 h-4"></i>
-          <span>6. Điểm Nghẽn & Kaizen LAF</span>
+          <span>7. Điểm Nghẽn & Kaizen LAF</span>
         </button>
 
         <button data-tab="simulation_tab" class="tab-btn px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-2 whitespace-nowrap">
           <i data-lucide="sliders" class="w-4 h-4"></i>
-          <span>7. Bộ Tham Số & Mô Phỏng 5M</span>
+          <span>8. Bộ Tham Số & Mô Phỏng 5M</span>
         </button>
       </div>
     </div>
@@ -332,16 +337,17 @@
     </section>
 
     <!-- ==================== TAB 2: ĐƠN HÀNG KD & KẾ HOẠCH 5M ==================== -->
-    <section id="tab-orders_planning" class="tab-panel hidden space-y-6">
+    <!-- ==================== TAB 2: ĐƠN HÀNG KD ==================== -->
+    <section id="tab-orders" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
       <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
             <i data-lucide="calendar-check" class="w-4 h-4 text-amber-500"></i>
-            Quản Lý Đơn Đặt Hàng Kinh Doanh (TVS Thật) & Kế Hoạch 1 — Thuật Toán Tối Ưu 5M
+            Quản Lý Đơn Đặt Hàng Kinh Doanh (TVS Thật)
           </h2>
-          <p class="text-xs text-slate-500">Đã nạp 651 dòng Size (113 PO • 64.837 đôi • 11.832 thùng CLP). Tự động lập lịch lùi 5M đảm bảo 100% đúng Ngày xuất KD</p>
+          <p class="text-xs text-slate-500">Đã nạp 651 dòng Size (113 PO • 64.837 đôi • 11.832 thùng CLP). Bấm “Sang Kế Hoạch Tối Ưu” để xem lịch 5M đã lập cho các đơn này.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
           <button onclick="MESApp.openManualOrderModal()" class="text-xs bg-slate-900 hover:bg-slate-800 text-white font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
@@ -355,35 +361,15 @@
           <button onclick="MESIO.downloadOrderTemplate()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-2.5 py-1.5 rounded-lg border border-slate-200 transition">
             <span>Tải Template</span>
           </button>
-          <button onclick="MESApp.exportOrdersToExcel()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
-            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-            <span>Export Kế Hoạch 5M (.XLSX)</span>
+          <button onclick="MESApp.switchTab('production_planning')" class="text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <span>Sang Kế Hoạch Tối Ưu →</span>
           </button>
         </div>
       </div>
 
-      <!-- 5M Optimization Banner Cards -->
-      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md space-y-4">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
-          <div class="flex items-center gap-2">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <h3 class="font-extrabold text-sm tracking-wide uppercase text-amber-400">
-              Thuật Toán Điều Độ 5M (Man • Machine • Material • Method • Measurement)
-            </h3>
-          </div>
-          <div class="flex items-center gap-3 text-xs">
-            <span class="text-slate-400 font-medium">Tổng ngày hoàn thành: <strong id="plan5mTotalDays" class="text-white">99.7 ngày SX chuẩn</strong></span>
-            <span class="text-slate-400 font-medium">Tỷ lệ OTD: <strong id="plan5mOtdRate" class="text-emerald-400">100% đúng hạn KD</strong></span>
-          </div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3" id="fiveMOptimizationCards"></div>
-      </div>
 
-      <!-- Main Layout: 8 cols Orders Table + 4 cols Interactive POH Calculator -->
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        <!-- Left 8 cols: Filters & Orders Table -->
-        <div class="lg:col-span-8 space-y-4">
+      <div class="space-y-4">
+        <!-- Filters & Orders Table (toàn chiều rộng, không còn cột POH bên phải) -->
           <!-- Filters & View Switchers -->
           <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2 flex-wrap flex-1">
@@ -415,10 +401,92 @@
               </table>
             </div>
           </div>
+      </div>
+    </section>
+
+    <!-- ==================== TAB 3: KẾ HOẠCH SẢN XUẤT TỐI ƯU ==================== -->
+    <section id="tab-production_planning" class="tab-panel hidden space-y-6">
+
+      <!-- Action Bar -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
+            <i data-lucide="calendar-check" class="w-4 h-4 text-amber-500"></i>
+            Kế Hoạch Sản Xuất Tối Ưu — Thuật Toán 5M
+          </h2>
+          <p class="text-xs text-slate-500">Lịch lùi 5M được lập từ chính 113 PO ở tab Đơn Hàng KD, đảm bảo 100% đúng Ngày xuất KD. Thuật toán chạy ngay trong trình duyệt, giải thích từng bước ở dưới.</p>
         </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          <button onclick="MESApp.switchTab('orders')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg border border-slate-200 transition">
+            <span>← Về Đơn Hàng KD</span>
+          </button>
+          <button onclick="MESApp.exportOrdersToExcel()" class="text-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition">
+            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+            <span>Export Kế Hoạch 5M (.XLSX)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 5M Optimization Banner Cards -->
+      <div class="bg-gradient-to-r from-slate-900 via-slate-900 to-indigo-950 rounded-2xl p-5 text-white shadow-md space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <h3 class="font-extrabold text-sm tracking-wide uppercase text-amber-400">
+              Thuật Toán Điều Độ 5M (Man • Machine • Material • Method • Measurement)
+            </h3>
+          </div>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="text-slate-400 font-medium">Tổng ngày hoàn thành: <strong id="plan5mTotalDays" class="text-white">99.7 ngày SX chuẩn</strong></span>
+            <span class="text-slate-400 font-medium">Tỷ lệ OTD: <strong id="plan5mOtdRate" class="text-emerald-400">100% đúng hạn KD</strong></span>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3" id="fiveMOptimizationCards"></div>
+      </div>
+
+      <!-- Giải thích thuật toán tối ưu -->
+      <div class="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4">
+        <div>
+          <h3 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-amber-500"></i>
+            Thuật toán chạy tối ưu — giải thích từng bước
+          </h3>
+          <p class="text-xs text-slate-500 mt-1">Thuật toán này chạy ngay trong trình duyệt (file <code class="bg-slate-100 px-1 rounded">js/optimizer.js</code> → hàm <code class="bg-slate-100 px-1 rounded">scheduleAllOrders()</code>), không cần server, không cần chờ AI. Mỗi lần thêm/sửa đơn hàng hoặc bấm chạy 1 ca, lịch được tính lại toàn bộ.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 text-xs leading-relaxed">
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-900">Bước 1 — Nạp dữ liệu thật</div>
+            <p class="text-slate-600">Lấy <strong id="algoTotalOrders">113 PO</strong> với <strong id="algoTotalPairs">64.837 đôi</strong> (651 dòng size, 5 mã màu, 19 nước) từ <code class="bg-white px-1 rounded border">js/data.js</code>. Mỗi PO có ngày xuất KD, mã màu, tổng đôi và dải size thật — không dùng số liệu mẫu.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-900">Bước 2 — Tính nhịp chuẩn (takt)</div>
+            <p class="text-slate-600">Xưởng LVF cần <strong>650 đôi/ngày</strong>, nên tổng thời gian chuẩn là <strong id="algoTotalDays">99,7 ngày SX</strong> (tổng đôi ÷ 650). Đây là thước đo để biết một phương án có kịp hay không, trước khi tính lịch chi tiết.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-900">Bước 3 — Lập lịch lùi (Backward Scheduling)</div>
+            <p class="text-slate-600">Không xếp từ hôm nay đi tới mà <strong>lùi từ Ngày xuất KD</strong> của từng PO: <strong>−5 ngày Gò LVF, −6 ngày In lụa (ủ 24 giờ), −7 ngày Đùn/Chặt (lưu kho 48 giờ), −8 ngày Mài đế, −19 ngày Ép đế (ép trước 2 tuần)</strong>. Nhờ lùi từ hạn giao nên lịch sinh ra đã đúng hạn theo thiết kế, thay vì xếp xong mới kiểm tra trễ.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-900">Bước 4 — Gom màu thành chiến dịch</div>
+            <p class="text-slate-600">Các PO cùng mã màu được xếp chạy liền kề nhau, thay vì đổi màu liên tục. Kết quả: số lần đổi màu giảm từ <strong>42 lần xuống 4 lần</strong>, tiết kiệm hơn <strong>19 giờ dừng máy/tháng</strong>, hao hụt cao su giảm từ 18% xuống dưới 4%.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-900">Bước 5 — Cân bằng 5M và chốt kỹ thuật</div>
+            <p class="text-slate-600"><strong>MAN:</strong> cán vải gom lô 2 ngày/tuần, điều động nhân sự dôi dư sang kiểm chặt/mài đế. <strong>MACHINE:</strong> 12 khuôn phân bổ theo tỷ lệ size thật, ép trước + tăng ca 3,5 giờ để đủ 650 đôi/ngày. <strong>MATERIAL:</strong> đồng bộ định mức cao su/vải theo PO. <strong>MEASUREMENT:</strong> khóa 4 chốt — ủ in lụa ≥ 24 giờ, lưu đùn ≥ 48 giờ, mài xong trước ≥ 3 ngày, kit đồng bộ 100%.</p>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1">
+            <div class="font-bold text-slate-900">Bước 6 — Kiểm tra OTD và mô phỏng lại</div>
+            <p class="text-slate-600">Lịch chỉ được chốt khi <strong>OTD = 100% (113/113 PO đúng hạn KD)</strong>. Bộ tham số POH ở dưới cho phép thử đổi sản lượng LVF/ngày, số khuôn, phương án cán vải/ép đế và xem ngay POH, công suất có đủ không — đổi tham số là tính lại ngay, không cần chạy lại toàn bộ.</p>
+          </div>
+        </div>
+        <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs leading-relaxed text-amber-950">
+          <div class="font-bold">Nâng cao (chạy ngoài trình duyệt, không thay thế thuật toán 5M ở trên): APS bằng CP-SAT trong thư mục <code class="bg-white px-1 rounded border">tools/</code> của repo.</div>
+          <p class="mt-1">APS là mô hình 1 công đoạn, nhiều chuyền song song: mỗi PO gán vào đúng 1 chuyền, đổi mã phụ thuộc thứ tự bằng <code class="bg-white px-1 rounded border">AddCircuit</code>, mồi nghiệm bằng EDD + gom nhóm, hàm mục tiêu <code class="bg-white px-1 rounded border">min Z = 100 × Σ(trọng số × giờ trễ) + 10 × tổng giờ đổi mã + 1 × makespan</code>. Chạy bằng: <code class="bg-white px-1 rounded border">python tools/tvs_to_aps.py</code> rồi <code class="bg-white px-1 rounded border">python tools/aps_scheduler.py tools/aps_inputs.xlsx --time-limit 120</code>. Kết quả APS là tham khảo cho việc xếp PO vào chuyền, còn lịch đa công đoạn (lùi 5M, ủ, lưu kho, khuôn) vẫn lấy ở tab này.</p>
+        </div>
+      </div>
 
         <!-- Right 4 cols: Interactive 5M & POH Balancing Calculator -->
-        <div class="lg:col-span-4 bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm space-y-4">
           <div class="border-b border-slate-200 pb-3">
             <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
               <i data-lucide="sliders" class="w-4 h-4 text-emerald-600"></i>
@@ -456,10 +524,9 @@
           <div id="pohCalculationResult" class="space-y-2.5 text-xs"></div>
         </div>
 
-      </div>
     </section>
 
-    <!-- ==================== TAB 3: PHÂN ĐOẠN & 32 CÔNG ĐOẠN NHỎ ==================== -->
+    <!-- ==================== TAB 4: PHÂN ĐOẠN & 32 CÔNG ĐOẠN NHỎ ==================== -->
     <section id="tab-workstations" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
@@ -528,7 +595,7 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 4: KHO BTP NHỎ WIP (32 MÃ) ==================== -->
+    <!-- ==================== TAB 5: KHO BTP NHỎ WIP (32 MÃ) ==================== -->
     <section id="tab-btp_inventory" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
@@ -624,7 +691,7 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 5: BÀN GIAO BTP SANG LVF ==================== -->
+    <!-- ==================== TAB 6: BÀN GIAO BTP SANG LVF ==================== -->
     <section id="tab-lvf_handover" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
@@ -735,7 +802,7 @@
       </div>
     </section>
 
-    <!-- ==================== TAB 6: ĐIỂM NGHẼN & KAIZEN LAF ==================== -->
+    <!-- ==================== TAB 7: ĐIỂM NGHẼN & KAIZEN LAF ==================== -->
     <section id="tab-kaizen_center" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
@@ -766,7 +833,7 @@
       <div id="kaizenListContainer" class="hidden"></div>
     </section>
 
-    <!-- ==================== TAB 7: BỘ THAM SỐ & MÔ PHỎNG 5M ==================== -->
+    <!-- ==================== TAB 8: BỘ THAM SỐ & MÔ PHỎNG 5M ==================== -->
     <section id="tab-simulation_tab" class="tab-panel hidden space-y-6">
 
       <!-- Action Bar -->
@@ -1157,12 +1224,12 @@
   </footer>
 
   <!-- Application Scripts -->
-  <script src="js/data.js?v=2"></script>
-  <script src="js/storage.js?v=2"></script>
-  <script src="js/optimizer.js?v=2"></script>
-  <script src="js/charts.js?v=2"></script>
-  <script src="js/io.js?v=2"></script>
-  <script src="js/app.js?v=2"></script>
+  <script src="js/data.js?v=3"></script>
+  <script src="js/storage.js?v=3"></script>
+  <script src="js/optimizer.js?v=3"></script>
+  <script src="js/charts.js?v=3"></script>
+  <script src="js/io.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
   
   <script>
     document.addEventListener('DOMContentLoaded', () => {
