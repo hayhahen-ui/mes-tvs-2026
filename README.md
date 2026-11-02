@@ -20,6 +20,26 @@ Cách sửa: `storage.js` tự build/migrate `segments` + `subProcesses` + chu�
 
 ---
 
+## 0b. APS — LẬP KẾ HOẠCH SẢN XUẤT TỐI ƯU BẰNG CP-SAT (02/11/2026)
+
+Thư mục `tools/` đấu nối bộ giải **APS (Google OR-Tools CP-SAT)** vào dự án
+(xem chi tiết, bảng đấu nối và giới hạn trong `tools/README_APS.md`):
+
+```bash
+pip install ortools pandas matplotlib openpyxl
+python tools/tvs_to_aps.py                                    # TVS (113 PO) -> tools/aps_inputs.xlsx
+python tools/aps_scheduler.py tools/aps_inputs.xlsx            # chạy solver, ra CSV + Gantt trong tools/
+```
+
+Nói rõ giới hạn để không hiểu nhầm: APS này là mô hình **1 công đoạn, nhiều
+chuyền song song** (gán mỗi PO vào 1 chuyền, gom màu giảm đổi mã, tối thiểu
+trễ có trọng số + setup + makespan) — nó **không** thay thế lịch 5M đa công
+đoạn của web app (lịch lùi backward, ủ in lụa 24h, khuôn ép đế). Dữ liệu lệnh,
+mã màu, số đôi và ngày xuất là thật từ `js/data.js` (113 PO, 64.837 đôi);
+`release_date`, `priority_weight`, chuyền và ma trận đổi mã là mẫu để sửa tay
+trong Excel vì `data.js` không chứa các số liệu đó. APS chạy offline bằng
+Python, Vercel không chạy được nó.
+
 ## 1. TỔNG QUAN DỮ LIỆU ĐẦU VÀO NHÀ MÁY (TVS REAL DATA)
 
 Hệ thống được xây dựng và chuẩn hóa trực tiếp từ 3 tệp dữ liệu gốc tại đường dẫn `D:\AI\CONGVIEC`:
